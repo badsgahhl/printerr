@@ -50,6 +50,20 @@ alle Schilder gleichmäßig kleiner und bleiben schnittgenau — geschnitten wir
 nach gedruckter Linie, nicht nach Lineal. Wer es genau wissen will, schaltet
 „Maßstab-Lineal mitdrucken" ein und misst den 100-mm-Balken nach.
 
+## Schildgröße einstellen
+
+In der Seitenleiste unter **Schildgröße** lassen sich vier Dinge verstellen:
+Preis, Produktname, Kleintext und Rand.
+
+Alle drei Größen sind **Obergrenzen**, keine festen Werte. Passt der Text nicht,
+verkleinert die Automatik ihn weiter — bei „1.148,00 €" bleibt der Preis also
+kleiner als eingestellt, während „89,00 €" die volle Größe bekommt. Genau
+deshalb ist ein fester Wert keine Option: er würde bei langen Preisen über den
+Rand laufen.
+
+Die Einstellungen liegen im Browser des jeweiligen Rechners, nicht in der
+Tabelle. „Zurücksetzen" stellt die Ausgangswerte wieder her.
+
 ## Entwickeln
 
 ```sh
@@ -89,17 +103,18 @@ Seitenaufteilung lassen sich so ohne Browser prüfen.
   warten, also muss das Layout jederzeit stimmen - auch wenn jemand Cmd+P drückt.
 - **Keine CSS-Hintergrundfarben im Etikett.** Browser drucken sie standardmäßig
   nicht. Gestaltet wird mit Typografie und Linien.
+- **Im Druck darf nichts neben den Bögen stehen.** Ein Bogen ist exakt 297 mm
+  hoch; schon ein paar Millimeter Abstand aus dem Bildschirmlayout schieben ihn
+  über die Seite und hinterlassen eine fast leere Folgeseite. `.sheet-list` setzt
+  deshalb Abstand und Innenabstand im Druck auf null.
+- **Der Seitenumbruch sitzt auf `.sheet-scaler`, nicht auf `.sheet`.** Jeder Bogen
+  ist einziges Kind seines Wrappers, `:last-child` träfe also auf alle zu — und
+  ein Umbruch hinter dem letzten Bogen erzeugt eine leere Schlussseite.
 - **Geld ist immer Integer-Cent.** Preise werden nie als Fließkommazahl addiert.
 - **105 × 148,5 mm, nicht ISO-A6.** A6 ist 105 × 148 mm; auf A4 blieben damit
   pro Bogen 1 mm Rest und die Schnittlinien würden wandern.
 
 ## Offen
 
-- **Eigene Schrift einbetten.** Aktuell greift ein System-Font-Stack (Georgia).
-  Damit unterscheiden sich die Schriftmetriken zwischen Rechnern - und da die
-  Schriftgrößen automatisch berechnet werden, fallen die Schilder je nach Gerät
-  minimal anders aus. Eine eingebettete Schrift behebt das und bringt zugleich
-  Versalziffern, die auf einem Preisschild besser lesbar sind als die
-  Mediävalziffern von Georgia.
 - Größenvarianten (ein Schild, mehrere Größen mit eigenen Preisen). Die Spalte
   `Layout` hält den Platz dafür frei.
