@@ -1,0 +1,51 @@
+{
+  "name": "printerr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Preisschilder fuer erzgebirgische Holzkunst - laeuft im Browser, liest LibreOffice-Tabellen",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "build-only": "vite build",
+    "preview": "vite preview --port 4300",
+    "type-check": "vue-tsc --build",
+    "test:unit": "vitest",
+    "lint:oxlint": "oxlint . --fix --no-error-on-unmatched-pattern",
+    "lint:vue-templates": "eslint . --fix --no-warn-ignored",
+    "lint": "run-s lint:oxlint lint:vue-templates",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "beispiele": "vite-node scripts/build-beispiel-ods.ts"
+  },
+  "dependencies": {
+    "@vueuse/core": "^15.0.0",
+    "fflate": "^0.8.3",
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/vue": "^8.1.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tsconfig/node24": "^24.0.5",
+    "@types/node": "^24.13.3",
+    "@typescript-eslint/parser": "^8.70.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.10.0",
+    "eslint-plugin-vue": "^10.11.0",
+    "jsdom": "^30.1.0",
+    "npm-run-all2": "^9.0.3",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.3",
+    "vite": "8.3.0",
+    "vite-node": "^5.0.1",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.1",
+    "vue-tsc": "^3.3.11"
+  }
+}

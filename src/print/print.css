@@ -1,0 +1,199 @@
+/*
+ * Page setup and the screen/paper switch.
+ *
+ * The preview and the printout are the same DOM: only the scaling wrapper is
+ * neutralised for print, so what the seller sees is what comes out.
+ */
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+.sheet {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--sheet-w);
+  height: var(--sheet-h);
+  background: #fff;
+}
+
+.sheet__grid {
+  display: grid;
+  height: 100%;
+  grid-template-columns: repeat(var(--sheet-cols), var(--label-w));
+  grid-template-rows: repeat(var(--sheet-rows), var(--label-h));
+}
+
+.sheet__slot {
+  overflow: hidden;
+}
+
+/*
+ * Cut marks live on the sheet, not on the label: a label knows nothing about its
+ * neighbours, and a border per label would double every inner line. Only the
+ * centre cross is drawn -- the outer edges of the grid are the edges of the
+ * paper, which is also the strip a printer cannot reach.
+ */
+.sheet__cuts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sheet__cut {
+  position: absolute;
+  background: #999;
+}
+
+.sheet__cut--v {
+  top: 0;
+  bottom: 0;
+  left: var(--label-w);
+  width: 0.25mm;
+}
+
+.sheet__cut--h {
+  top: var(--label-h);
+  right: 0;
+  left: 0;
+  height: 0.25mm;
+}
+
+/* A ruler the seller can check once with a tape measure to confirm the print
+   dialog is not scaling the page. */
+.sheet__ruler {
+  position: absolute;
+  bottom: 4mm;
+  left: 4mm;
+  width: 100mm;
+  height: 3mm;
+  border: 0.25mm solid #999;
+  border-top: none;
+  color: #555;
+  font-family: system-ui, sans-serif;
+  font-size: 2.5mm;
+}
+
+.sheet__ruler::after {
+  position: absolute;
+  bottom: 0.5mm;
+  left: 1mm;
+  content: '100 mm — nachmessen: stimmt der Maßstab?';
+}
+
+/*
+ * Screen-only shrinking, in two parts.
+ *
+ * The transform goes on the sheet, and the wrapper claims the resulting size as
+ * its own layout box. A transform reserves no space, so without the wrapper each
+ * sheet would leave a full unscaled page of empty room behind it -- and putting
+ * the transform on the wrapper as well would scale everything twice over.
+ *
+ * Scaling rather than resizing is deliberate: a transform does not re-run layout,
+ * so line breaks and rounding inside the label are identical on screen and on
+ * paper, and one set of measured font sizes serves both.
+ */
+.sheet-scaler {
+  width: calc(var(--sheet-w, 210mm) * var(--preview-scale, 1));
+  height: calc(var(--sheet-h, 297mm) * var(--preview-scale, 1));
+}
+
+.sheet-scaler > .sheet {
+  transform: scale(var(--preview-scale, 1));
+  transform-origin: top left;
+}
+
+@media screen {
+  .sheet {
+    box-shadow: 0 1px 6px rgb(0 0 0 / 18%);
+  }
+
+  /* 0.25mm is well under one device pixel on screen and would vanish. */
+  .sheet__cut--v {
+    width: 1px;
+  }
+
+  .sheet__cut--h {
+    height: 1px;
+  }
+
+  .sheet__slot--blocked {
+    background: repeating-linear-gradient(45deg, #f4f4f4, #f4f4f4 3mm, #e6e6e6 3mm, #e6e6e6 6mm);
+  }
+}
+
+@media print {
+  .app-chrome {
+    display: none !important;
+  }
+
+  /* The measuring sandbox is position:fixed, which in print would otherwise
+     repeat on every page. */
+  [data-printerr-measure] {
+    display: none !important;
+  }
+
+  /* The app shell is a full-height flex layout with its own scrolling; on paper
+     it has to get out of the way and let the sheets flow. */
+  .app-shell {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .print-area,
+  .print-area > * {
+    display: block;
+    height: auto;
+    max-height: none;
+    padding: 0;
+    gap: 0;
+    overflow: visible;
+  }
+
+  /*
+   * The sheet list is a grandchild of .print-area, so the rule above never
+   * reached it. Its screen spacing -- 16px between sheets, 8px top and bottom --
+   * is around 6mm, and a sheet is exactly 297mm tall: any extra at all pushes
+   * each sheet past the bottom of its page and leaves a near-empty one behind.
+   */
+  .sheet-list {
+    display: block;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  /*
+   * Page breaks belong on the scaler, not on the sheet inside it.
+   *
+   * Every .sheet is the only child of its own .sheet-scaler, so `.sheet:last-child`
+   * matched all of them and switched the break off everywhere -- while a break on
+   * the last element would have produced a trailing blank page.
+   */
+  .sheet-scaler {
+    width: auto;
+    height: auto;
+    margin: 0;
+    break-inside: avoid;
+    break-after: page;
+  }
+
+  .sheet-scaler > .sheet {
+    transform: none;
+  }
+
+  .sheet-scaler:last-child {
+    break-after: auto;
+  }
+
+  .sheet {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .sheet__slot--blocked {
+    background: none;
+  }
+}

@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+
+/* Shared tokens so the app chrome and the label (which is hand-written CSS in mm,
+   see src/print/label.css) cannot drift apart on colour. */
+@theme {
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #555555;
+  --color-rule: #b8b8b8;
+  --color-paper: #ffffff;
+}

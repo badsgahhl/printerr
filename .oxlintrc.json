@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["vue", "typescript", "unicorn"],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["**/dist/**", "**/coverage/**", "**/beispiele/**"],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "eqeqeq": ["error", "smart"],
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "src/test/**/*"],
+      "plugins": ["vitest"],
+      "rules": {
+        "vitest/expect-expect": "error",
+        "vitest/no-commented-out-tests": "error",
+        "vitest/no-conditional-expect": "error",
+        "vitest/no-disabled-tests": "error",
+        "vitest/no-focused-tests": "error",
+        "vitest/no-identical-title": "error"
+      }
+    },
+    {
+      "files": ["scripts/**/*", "vite.config.ts", "vitest.config.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

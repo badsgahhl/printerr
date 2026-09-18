@@ -1,0 +1,167 @@
+/*
+ * The label itself: hand-written CSS in millimetres, deliberately not Tailwind.
+ *
+ * Tailwind's spacing scale is rem-based and therefore moves with the root font
+ * size; a label has to be 105mm wide on paper no matter what the browser or the
+ * user has done to that. Every number here comes from print/geometry.ts via the
+ * custom properties PriceLabel binds.
+ *
+ * These classes are global rather than scoped because the measuring sandbox in
+ * infra/dom-measurer.ts renders text with the same class names -- a scoped
+ * attribute would change the metrics it reads.
+ */
+
+.label {
+  box-sizing: border-box;
+  display: flex;
+  width: var(--label-w);
+  height: var(--label-h);
+  flex-direction: column;
+  padding: var(--label-pad);
+  background: #fff;
+  color: #1a1a1a;
+  font-family: var(--label-font, Georgia, 'Times New Roman', serif);
+
+  /*
+   * The auto-fit binary search assumes that "does it fit" only ever goes from
+   * true to false as the font grows. Hyphenation and text-wrap: pretty both
+   * break that assumption by changing line counts non-monotonically.
+   */
+  hyphens: none;
+  overflow: hidden;
+  text-wrap: wrap;
+}
+
+.label__head {
+  display: flex;
+  height: var(--label-head-h);
+  flex-direction: column;
+  gap: var(--label-head-gap);
+}
+
+.label__name {
+  display: flex;
+  height: var(--label-name-h);
+  align-items: flex-end;
+  font-size: var(--fs-name, 24px);
+  font-weight: 600;
+  line-height: 1.12;
+  overflow: hidden;
+
+  /* Balancing keeps the line count, it only evens the lines out, so the search
+     assumption still holds. */
+  text-wrap: balance;
+}
+
+.label__subtitle {
+  height: var(--label-subtitle-h);
+  color: #555;
+  font-size: var(--fs-subtitle, 12px);
+  line-height: 1.1;
+  overflow: hidden;
+}
+
+.label__artnr {
+  height: var(--label-artnr-h);
+  color: #555;
+  font-size: var(--fs-artnr, 10px);
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  overflow: hidden;
+}
+
+.label__price {
+  display: flex;
+  height: var(--label-price-h);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--label-price-gap);
+}
+
+.label__price-main {
+  font-size: var(--fs-price, 56px);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.label__price-suffix {
+  height: var(--label-price-suffix-h);
+  color: #555;
+  font-size: var(--fs-price-suffix, 12px);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.label__breakdown {
+  box-sizing: border-box;
+  height: var(--label-breakdown-h);
+
+  /* A hairline rather than a filled bar: browsers drop background colours when
+     printing unless the user ticks a box, but borders always print. */
+  border-top: 0.25mm solid #b8b8b8;
+  padding-top: var(--label-breakdown-gap);
+  overflow: hidden;
+}
+
+.label__row {
+  display: flex;
+  height: var(--label-breakdown-row-h);
+  align-items: baseline;
+  gap: var(--label-row-gap, 1.5mm);
+}
+
+.label__row-label {
+  flex: 1;
+  font-size: var(--fs-breakdown-label, 10px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A fixed column, claimed for every row once any row has a number, so the
+   descriptions and amounts stay in line. */
+.label__row-artnr {
+  width: var(--label-artnr-col-w);
+  color: #555;
+  font-size: calc(var(--fs-breakdown-label, 10px) * 0.9);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.label__row-amount {
+  width: var(--label-amount-w);
+  font-size: var(--fs-breakdown-amount, 10px);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.label__foot {
+  display: flex;
+  height: var(--label-foot-h);
+  flex-direction: column;
+  margin-top: auto;
+  gap: var(--label-foot-gap);
+}
+
+.label__note {
+  height: var(--label-note-h);
+  color: #555;
+  font-size: var(--fs-note, 9px);
+  line-height: 1.1;
+  overflow: hidden;
+}
+
+.label__brand {
+  height: var(--label-brand-h);
+  align-self: center;
+  color: #555;
+  font-size: var(--fs-brand, 11px);
+  font-style: italic;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}

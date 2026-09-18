@@ -1,0 +1,44 @@
+/*
+ * The label typeface, embedded rather than linked.
+ *
+ * Embedding is not decoration: the label's font sizes are computed by measuring
+ * text, so the shop PC and any other machine have to resolve the same metrics or
+ * the same label comes out differently. A system font stack cannot promise that.
+ *
+ * Source Serif 4 also brings lining figures -- Georgia's old-style numerals put
+ * descenders on 3, 4, 7 and 9, which reads poorly in a large price.
+ *
+ * Only the latin subset is shipped. It covers German umlauts, the low quotation
+ * marks, the euro sign and the middle dot; see src/assets/fonts/ATTRIBUTION.md.
+ */
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 400;
+
+  /* block, not swap: a fallback rendering would be measured with the wrong
+     metrics, and every size derived from it would be wrong. */
+  font-display: block;
+  src: url('./fonts/source-serif-4-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('./fonts/source-serif-4-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('./fonts/source-serif-4-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  --label-font: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+}
