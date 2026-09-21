@@ -13,12 +13,25 @@
     >
       … oder Datei auswählen
     </button>
+    <p class="text-ink-soft mt-3 text-xs">
+      Noch keine Tabelle?
+      <a :href="EXAMPLE_ODS_URL" :download="EXAMPLE_ODS_NAME" class="text-ink underline hover:no-underline">
+        Beispieltabelle herunterladen
+      </a>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useDropZone, useFileDialog } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
+
+// `?inline` makes Vite bake the sheet into the bundle as a data URL instead of
+// emitting a second file. Both deployments need that: the shop copies nothing
+// but index.html, and on GitHub Pages the link keeps working after a rebuild.
+import EXAMPLE_ODS_URL from '../../beispiele/preisschilder-beispiel.ods?inline'
+
+const EXAMPLE_ODS_NAME = 'preisschilder-beispiel.ods'
 
 const emit = defineEmits<{ file: [File] }>()
 

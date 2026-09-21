@@ -7,6 +7,8 @@ import { configDefaults, defineConfig } from 'vitest/config'
 // skipping the plugin keeps the suite fast.
 export default defineConfig({
   plugins: [vue()],
+  // Mirrors vite.config.ts: the drop zone imports the example .ods as a data URL.
+  assetsInclude: ['**/*.ods'],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
