@@ -17,6 +17,14 @@ Stück trägt seinen Endpreis.
 
 Das Tabellenformat steht in [`docs/tabellen-format.md`](docs/tabellen-format.md).
 
+## Ausprobieren
+
+Im Browser, ohne Installation: <https://badsgahhl.github.io/printerr/>
+
+Dort im Ablagefeld auf **Beispieltabelle herunterladen** klicken und die Datei
+wieder ins Fenster ziehen — mehr braucht es nicht, um zu sehen, was gedruckt
+wird. Die Seite rechnet trotzdem nur lokal: Es wird nichts hochgeladen.
+
 ## Loslegen
 
 ```sh
@@ -25,7 +33,8 @@ pnpm dev              # http://localhost:4300
 ```
 
 Beispieldatei zum Ausprobieren: `beispiele/preisschilder-beispiel.ods`
-(einfach ins Fenster ziehen). Neu erzeugen lassen sie sich mit `pnpm beispiele`.
+(einfach ins Fenster ziehen) — dieselbe Datei steckt als Download in der
+Oberfläche. Neu erzeugen lassen sie sich mit `pnpm beispiele`.
 
 ## Ausliefern
 
@@ -34,8 +43,16 @@ pnpm build            # erzeugt dist/index.html
 ```
 
 Das ist **eine einzige Datei** — JavaScript, CSS und alles andere sind darin
-eingebettet. Auf den Laden-Rechner kopieren, doppelklicken, fertig. Keine
-Installation, kein Server, kein Internet.
+eingebettet, auch die Beispieltabelle hinter dem Download-Link. Auf den
+Laden-Rechner kopieren, doppelklicken, fertig. Keine Installation, kein Server,
+kein Internet.
+
+### GitHub Pages
+
+Dieselbe Datei liegt unter <https://badsgahhl.github.io/printerr/>.
+`.github/workflows/pages.yml` baut und veröffentlicht sie bei jedem Push auf
+`main`. Einmalig nötig: in den Repository-Einstellungen unter **Pages** als
+Quelle **GitHub Actions** wählen.
 
 ## Drucken
 
@@ -110,6 +127,9 @@ Seitenaufteilung lassen sich so ohne Browser prüfen.
 - **Der Seitenumbruch sitzt auf `.sheet-scaler`, nicht auf `.sheet`.** Jeder Bogen
   ist einziges Kind seines Wrappers, `:last-child` träfe also auf alle zu — und
   ein Umbruch hinter dem letzten Bogen erzeugt eine leere Schlussseite.
+- **Die Beispieltabelle steckt als Data-URL im Bundle.** Das `?inline` in
+  `ImportDropZone.vue` ist kein Zufall: Der Laden kopiert nur `index.html`, eine
+  zweite Datei daneben gäbe es dort nicht.
 - **Geld ist immer Integer-Cent.** Preise werden nie als Fließkommazahl addiert.
 - **105 × 148,5 mm, nicht ISO-A6.** A6 ist 105 × 148 mm; auf A4 blieben damit
   pro Bogen 1 mm Rest und die Schnittlinien würden wandern.
