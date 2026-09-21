@@ -8,5 +8,5 @@
   "sortTailwindcss": {},
   "sortImports": true,
   "sortPackageJson": false,
-  "ignorePatterns": ["**/dist/**", "**/beispiele/**"]
+  "ignorePatterns": ["**/dist/**", "**/beispiele/**", "**/src/components/ui/**"]
 }

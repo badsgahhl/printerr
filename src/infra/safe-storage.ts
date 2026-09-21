@@ -1,14 +1,13 @@
 /**
  * Browser storage that cannot take the app down with it.
  *
- * Two things bite when the built file is opened by double-click:
- *  - Firefox throws a SecurityError on `file://` origins, and it throws on
- *    *reading the property*, not on setItem -- so the access itself is guarded.
- *  - Chrome refuses IndexedDB on file:// entirely, which is why this is
- *    localStorage and not something roomier. It is enough: a few hundred labels
- *    are well under 150KB against a 5MB quota.
+ * Reading `window.localStorage` can throw rather than merely return null -- a
+ * private window, a profile with site data blocked, or a page opened straight
+ * off disk in Firefox, which raises a SecurityError on the property access
+ * itself. So the access is guarded, not just the write.
  *
- * Chrome also gives every local file the same origin, hence the long key prefix.
+ * The long key prefix stays for the same reason: opened from disk, every local
+ * page in Chrome shares one origin and therefore one set of keys.
  */
 
 export const KEY_PREFIX = 'printerr:v1:'

@@ -1,6 +1,6 @@
 name: GitHub Pages
 
-# Publishes the built single-file app to https://badsgahhl.github.io/printerr/.
+# Publishes the built app to https://badsgahhl.github.io/printerr/.
 # Needs Settings -> Pages -> Source: "GitHub Actions" once, then every push to
 # main redeploys.
 

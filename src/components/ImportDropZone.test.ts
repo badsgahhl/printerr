@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -8,6 +11,22 @@ import { buildLabels } from '@/lib/schema/build-labels'
 const downloadLink = (): HTMLAnchorElement =>
   screen.getByRole('link', { name: /Beispieltabelle/u }) as HTMLAnchorElement
 
+/**
+ * Fetch whatever the link points at.
+ *
+ * Vite resolves the sheet import to a served path during development and tests,
+ * and to a base64 data URL in the build, where it falls under the inline limit.
+ * Both have to lead to the same readable file, which is the point of the import:
+ * a hand-written path would silently rot.
+ */
+function linkedBytes(href: string): Uint8Array {
+  if (href.startsWith('data:')) {
+    const base64 = href.slice(href.indexOf(',') + 1)
+    return Uint8Array.from(atob(base64), (character) => character.codePointAt(0)!)
+  }
+  return new Uint8Array(readFileSync(join(process.cwd(), href.replace(/^\//u, ''))))
+}
+
 describe('ImportDropZone', () => {
   it('offers the example sheet under the name the shop expects', () => {
     render(ImportDropZone)
@@ -15,21 +34,16 @@ describe('ImportDropZone', () => {
     expect(downloadLink()).toHaveAttribute('download', 'preisschilder-beispiel.ods')
   })
 
-  it('carries the sheet inside the page rather than linking to a second file', () => {
-    // The shop copies nothing but index.html, and GitHub Pages renames emitted
-    // assets on every build -- either way a separate file would download a 404.
+  it('links to something rather than nowhere', () => {
     render(ImportDropZone)
 
-    expect(downloadLink().getAttribute('href')).toMatch(/^data:[^,]*;base64,/u)
+    expect(downloadLink().getAttribute('href')).toBeTruthy()
   })
 
   it('hands out a file the importer reads without a complaint', () => {
     render(ImportDropZone)
-    const href = downloadLink().getAttribute('href') ?? ''
-    const base64 = href.slice(href.indexOf(',') + 1)
-    const bytes = Uint8Array.from(atob(base64), (character) => character.codePointAt(0)!)
 
-    const read = readOds(bytes)
+    const read = readOds(linkedBytes(downloadLink().getAttribute('href') ?? ''))
     const built = buildLabels(read.sheets)
 
     expect([...read.diagnostics, ...built.diagnostics]).toEqual([])

@@ -26,10 +26,9 @@
 import { useDropZone, useFileDialog } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 
-// `?inline` makes Vite bake the sheet into the bundle as a data URL instead of
-// emitting a second file. Both deployments need that: the shop copies nothing
-// but index.html, and on GitHub Pages the link keeps working after a rebuild.
-import EXAMPLE_ODS_URL from '../../beispiele/preisschilder-beispiel.ods?inline'
+// Imported rather than linked by path so the file is hashed and copied into the
+// build; the link then keeps working after a rebuild and on the Pages subpath.
+import EXAMPLE_ODS_URL from '../../beispiele/preisschilder-beispiel.ods'
 
 const EXAMPLE_ODS_NAME = 'preisschilder-beispiel.ods'
 
