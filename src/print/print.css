@@ -15,7 +15,27 @@
   box-sizing: border-box;
   width: var(--sheet-w);
   height: var(--sheet-h);
+
+  /*
+   * Grid tracks are rounded to whole device pixels, so rows that divide A4
+   * exactly in millimetres can still add up to a fraction of a pixel more than
+   * the sheet holding them. On screen nobody sees it; on paper that fraction is
+   * content below the page, and the browser opens another page for it. Clipped
+   * here, at an edge no printer reaches anyway.
+   */
+  overflow: hidden;
   background: #fff;
+
+  /*
+   * Print the colours without the seller having to find the right checkbox.
+   *
+   * Chrome ("Hintergrundgrafiken") and Firefox ("Hintergründe drucken") both
+   * leave background colours out of a printout unless it is ticked. The
+   * property is inherited, so this one declaration covers everything standing
+   * on the sheet -- the cut marks above all.
+   */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .sheet__grid {
@@ -41,9 +61,18 @@
   pointer-events: none;
 }
 
+/*
+ * Drawn as a border, not as a filled box.
+ *
+ * A background colour is the first thing a browser drops when printing, and a
+ * cut line that only exists on screen is worse than none at all -- the sheet
+ * gets cut by eye. Borders are foreground: they print whatever the dialog says
+ * about backgrounds, in every browser, with no checkbox to remember.
+ */
 .sheet__cut {
   position: absolute;
-  background: #999;
+  box-sizing: border-box;
+  border: 0 solid #999;
 }
 
 /* `left` and `top` come from the component, one per inner division. */
@@ -51,12 +80,14 @@
   top: 0;
   bottom: 0;
   width: 0.25mm;
+  border-left-width: 0.25mm;
 }
 
 .sheet__cut--h {
   right: 0;
   left: 0;
   height: 0.25mm;
+  border-top-width: 0.25mm;
 }
 
 /* A ruler the seller can check once with a tape measure to confirm the print
@@ -111,10 +142,12 @@
   /* 0.25mm is well under one device pixel on screen and would vanish. */
   .sheet__cut--v {
     width: 1px;
+    border-left-width: 1px;
   }
 
   .sheet__cut--h {
     height: 1px;
+    border-top-width: 1px;
   }
 
   .sheet__slot--blocked {
@@ -124,6 +157,15 @@
 
 @media print {
   .app-chrome {
+    display: none !important;
+  }
+
+  /*
+   * Dialogs and toasts are teleported to <body>, next to the app rather than
+   * inside it, so the rules below never reach them. One left open at Cmd+P
+   * would print as a page of its own.
+   */
+  body > *:not(#app) {
     display: none !important;
   }
 
@@ -167,6 +209,25 @@
   }
 
   /*
+   * Nothing behind a sheet may carry a colour.
+   *
+   * The shell is tinted grey on screen, and the sheet asks for its colours to be
+   * printed regardless of the dialog -- which a browser applies to whatever else
+   * it is told to paint as well. Without this, ticking that box (or a browser
+   * that prints backgrounds by default) would lay the app's grey over every
+   * page, sheets included.
+   */
+  html,
+  body,
+  .app-shell,
+  .print-workspace,
+  .print-area,
+  .sheet-list,
+  .sheet-scaler {
+    background: none;
+  }
+
+  /*
    * The sheet list is a grandchild of .print-area, so the rule above never
    * reached it. Its screen spacing -- 16px between sheets, 8px top and bottom --
    * is around 6mm, and a sheet is exactly 297mm tall: any extra at all pushes
@@ -183,26 +244,44 @@
    * Page breaks belong on the scaler, not on the sheet inside it.
    *
    * Every .sheet is the only child of its own .sheet-scaler, so `.sheet:last-child`
-   * matched all of them and switched the break off everywhere -- while a break on
-   * the last element would have produced a trailing blank page.
+   * matched all of them and switched the break off everywhere.
    */
   .sheet-scaler {
     width: auto;
     height: auto;
     margin: 0;
     break-inside: avoid;
-    break-after: page;
+  }
+
+  /*
+   * Asked for before each following sheet rather than after each sheet.
+   *
+   * Both say the same thing about where a page begins, but a break *after* the
+   * last sheet also says something about the end of the document, and Firefox
+   * answers that with an empty page. Guarding it with :last-child works only as
+   * long as nothing is ever rendered after the list; `+` needs no such promise.
+   */
+  .sheet-scaler + .sheet-scaler {
+    break-before: page;
   }
 
   .sheet-scaler > .sheet {
     transform: none;
   }
 
-  .sheet-scaler:last-child {
-    break-after: auto;
-  }
-
+  /*
+   * A quarter millimetre under the page, deliberately.
+   *
+   * Drivers report A4 as 8.27 x 11.69 inch often enough -- 296.9mm, a hair less
+   * than the 297mm a sheet is built from. A block taller than the page it is
+   * printed on is not simply cut off: it is moved to a page of its own and
+   * leaves the page before it empty, which is where the stray blank pages come
+   * from. The quarter millimetre is given up at the very bottom edge, outside
+   * what any consumer printer can reach, and only the sheet box shrinks -- every
+   * cut line is measured from the top, so not one of them moves.
+   */
   .sheet {
+    height: calc(var(--sheet-h) - 0.25mm);
     break-inside: avoid;
     box-shadow: none;
   }

@@ -74,6 +74,14 @@ Einmalig im Druckdialog einstellen (Chrome merkt es sich pro Drucker):
 - Kopf- und Fußzeilen: **aus**
 - Skalierung: **Standard** (100 %)
 
+Der Rand ist die einzige Einstellung, die wirklich weh tut: ein Bogen ist so hoch
+wie das Blatt, also passt er mit Rand nicht mehr auf eine Seite und hinter jedem
+folgt eine fast leere. Firefox nennt das unter „Ränder" genauso wie Chrome.
+
+**Hintergrundgrafiken** (Chrome) bzw. **Hintergrund drucken** (Firefox) müssen
+_nicht_ angehakt werden. Die Schnittlinien sind Rahmen und keine Flächen, und
+Rahmen druckt jeder Browser ohne Rückfrage.
+
 Die Schnittlinien werden mitgedruckt. Sollte der Dialog doch verkleinern, werden
 alle Schilder gleichmäßig kleiner und bleiben schnittgenau — geschnitten wird
 nach gedruckter Linie, nicht nach Lineal. Wer es genau wissen will, schaltet
@@ -123,18 +131,32 @@ Katalogänderungen und Seitenaufteilung lassen sich so ohne Browser prüfen.
 - **Seitenumbrüche macht JavaScript, nicht der Browser.** Grid und Flexbox haben
   dokumentierte Fehler mit `break-inside`; deshalb wird pro A4-Seite ein
   Block-Element mit genau vier Plätzen erzeugt.
-- **Im Druck darf nichts neben den Bögen stehen.** Ein Bogen ist exakt 297 mm
-  hoch; schon ein paar Millimeter Abstand aus dem Bildschirmlayout schieben ihn
+- **Im Druck darf nichts neben den Bögen stehen.** Ein Bogen ist so hoch wie das
+  Blatt; schon ein paar Millimeter Abstand aus dem Bildschirmlayout schieben ihn
   über die Seite und hinterlassen eine fast leere Folgeseite.
+- **Der Bogen ist im Druck ein viertel Millimeter kleiner als A4.** Druckertreiber
+  geben A4 gern als 8,27 × 11,69 Zoll aus — 296,9 mm, eine Spur weniger als die
+  297 mm, aus denen der Bogen gebaut ist. Was höher ist als die Seite, landet
+  nicht etwa abgeschnitten darauf, sondern auf einer eigenen und lässt die davor
+  leer. Abgegeben wird der Viertelmillimeter an der untersten Blattkante, die
+  ohnehin kein Drucker erreicht; jede Schnittlinie misst von oben, also wandert
+  keine.
 - **Der Seitenumbruch sitzt auf `.sheet-scaler`, nicht auf `.sheet`.** Jeder Bogen
   ist einziges Kind seines Wrappers, `:last-child` träfe also auf alle zu.
+- **Umbrochen wird _vor_ jedem weiteren Bogen, nicht nach jedem.** Beides sagt
+  dasselbe über den Seitenanfang, aber ein Umbruch hinter dem letzten Bogen sagt
+  zusätzlich etwas über das Dokumentende — und Firefox antwortet darauf mit einer
+  leeren Seite.
 - **Gemessen wird in einer Sandbox**, nicht im sichtbaren Etikett. Die Vorschau
   ist per `transform: scale()` verkleinert, und eine Transform verfälscht jede
   Messung.
 - **Gemessen wird beim Rendern, nicht beim Druckknopf.** `beforeprint` kann nicht
   warten, also muss das Layout jederzeit stimmen - auch wenn jemand Cmd+P drückt.
-- **Keine CSS-Hintergrundfarben im Etikett.** Browser drucken sie standardmäßig
-  nicht. Gestaltet wird mit Typografie und Linien.
+- **Keine CSS-Hintergrundfarben, auch nicht für die Schnittlinien.** Browser
+  drucken Flächen standardmäßig nicht — der Haken dafür ist in jedem Dialog
+  woanders und wird vergessen. Gestaltet wird mit Typografie und Rahmen, die
+  drucken immer. Der Bogen setzt zusätzlich `print-color-adjust: exact`, damit
+  auch Farbe, die doch einmal eine Fläche ist, nicht vom Haken abhängt.
 - **Geld ist immer Integer-Cent.** Preise werden nie als Fließkommazahl addiert.
 - **105 × 148,5 mm, nicht ISO-A6.** A6 ist 105 × 148 mm; auf A4 blieben damit
   pro Bogen 1 mm Rest und die Schnittlinien würden wandern. Dasselbe gilt für
