@@ -58,11 +58,25 @@ export function createSelection(deps: { storage?: SafeStorage } = {}) {
     for (const key of Object.keys(state.copies)) delete state.copies[key]
   }
 
-  function toggleBlockedSlot(slot: number): void {
-    if (slot < 0 || slot >= SLOTS_PER_SHEET) return
+  function toggleBlockedSlot(slot: number, slotsPerSheet = SLOTS_PER_SHEET): void {
+    if (slot < 0 || slot >= slotsPerSheet) return
     const index = state.blockedFirstSheetSlots.indexOf(slot)
     if (index === -1) state.blockedFirstSheetSlots.push(slot)
     else state.blockedFirstSheetSlots.splice(index, 1)
+  }
+
+  /**
+   * Forget blocked slots that the current sheet layout no longer has.
+   *
+   * Switching from sixteen labels a sheet to four would otherwise leave slot 12
+   * blocked invisibly -- paginate ignores it, but it comes back the moment the
+   * larger grid is chosen again, which reads as the app losing track.
+   */
+  function pruneBlockedSlots(slotsPerSheet: number): void {
+    const kept = state.blockedFirstSheetSlots.filter((slot) => slot < slotsPerSheet)
+    if (kept.length !== state.blockedFirstSheetSlots.length) {
+      state.blockedFirstSheetSlots.splice(0, state.blockedFirstSheetSlots.length, ...kept)
+    }
   }
 
   const isBlocked = (slot: number): boolean => state.blockedFirstSheetSlots.includes(slot)
@@ -74,8 +88,11 @@ export function createSelection(deps: { storage?: SafeStorage } = {}) {
       .map((label) => ({ labelId: label.id, copies: copiesOf(label.id) }))
   }
 
-  function planFor(labels: readonly Label[]) {
-    return paginate(jobsFor(labels), { blockedFirstSheetSlots: state.blockedFirstSheetSlots })
+  function planFor(labels: readonly Label[], slotsPerSheet = SLOTS_PER_SHEET) {
+    return paginate(jobsFor(labels), {
+      blockedFirstSheetSlots: state.blockedFirstSheetSlots,
+      slotsPerSheet
+    })
   }
 
   return {
@@ -88,6 +105,7 @@ export function createSelection(deps: { storage?: SafeStorage } = {}) {
     selectAll,
     clearSelection,
     toggleBlockedSlot,
+    pruneBlockedSlots,
     isBlocked,
     jobsFor,
     planFor,

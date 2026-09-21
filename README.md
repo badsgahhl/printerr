@@ -6,8 +6,9 @@ drucken.
 
 **→ <https://badsgahhl.github.io/printerr/>**
 
-Ein Schild ist ein Viertel A4 (**105 × 148,5 mm**, hoch), vier davon pro Bogen,
-mit gedruckten Schnittlinien.
+Wie viele Schilder auf einen A4-Bogen kommen, ist einstellbar — von einem
+(ganzes A4) bis sechzehn (A8). Voreingestellt sind vier, also ein Viertel-A4 pro
+Schild (**105 × 148,5 mm**, hoch). Die Schnittlinien werden mitgedruckt.
 
 ## Der Sonderfall, um den es eigentlich geht
 
@@ -33,6 +34,17 @@ Oben wird zwischen **Drucken** und **Daten** umgeschaltet.
 
 **Drucken** ist die Auswahl mit der Bogenvorschau. `Cmd+P` liefert immer die
 Schilder, auch aus dem Daten-Bereich heraus.
+
+Unter **Bogen & Schildgröße** wird die Aufteilung gewählt: 1, 2, 4, 6, 8, 9, 12
+oder 16 pro Bogen, oder frei als Spalten × Zeilen. Jede Aufteilung teilt A4 ohne
+Rest, damit die Schnittlinien nicht wandern. Die Typografie skaliert mit — die
+Größenregler gelten für ein Viertel-A4 und werden auf das gewählte Format
+umgerechnet, sodass ein Wechsel das Design behält statt die Schrift zu
+zertrümmern.
+
+Ab acht pro Bogen wird der Rand schmaler als die 3–6 mm, die Drucker am
+Blattrand nicht erreichen. Die App sagt das, statt es stillschweigend zu tun:
+betroffen sind nur die äußeren Schilder, und der Rand-Regler kann es ausgleichen.
 
 ## Wo die Daten liegen
 
@@ -125,7 +137,12 @@ Katalogänderungen und Seitenaufteilung lassen sich so ohne Browser prüfen.
   nicht. Gestaltet wird mit Typografie und Linien.
 - **Geld ist immer Integer-Cent.** Preise werden nie als Fließkommazahl addiert.
 - **105 × 148,5 mm, nicht ISO-A6.** A6 ist 105 × 148 mm; auf A4 blieben damit
-  pro Bogen 1 mm Rest und die Schnittlinien würden wandern.
+  pro Bogen 1 mm Rest und die Schnittlinien würden wandern. Dasselbe gilt für
+  jede andere Aufteilung: sie leitet sich aus A4 ab, nie aus einer DIN-Tabelle.
+- **Alle Etikettmaße sind Vielfache des Referenzformats.** Ein Viertel-A4 ist
+  kalibriert, jedes andere Raster skaliert davon — waagerecht mit der Breite,
+  senkrecht mit der Höhe, die Schrift mit der kleineren von beiden. Sonst würde
+  ein breites, flaches Schild senkrecht überlaufen.
 
 ## Offen
 

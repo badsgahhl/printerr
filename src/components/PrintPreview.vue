@@ -11,7 +11,7 @@
         class="sheet-scaler"
         :style="{ ...sheetCssVars(), '--preview-scale': String(scale) }"
       >
-        <PrintSheet :sheet="sheet" :show-ruler="showRuler && sheet.index === 0">
+        <PrintSheet :sheet="sheet" :show-ruler="showRuler && sheet.index === 0" :label-style="labelStyle">
           <template #label="{ labelId }">
             <PriceLabel
               v-if="labelFor(labelId)"

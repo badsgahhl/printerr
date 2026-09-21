@@ -46,15 +46,14 @@
   background: #999;
 }
 
+/* `left` and `top` come from the component, one per inner division. */
 .sheet__cut--v {
   top: 0;
   bottom: 0;
-  left: var(--label-w);
   width: 0.25mm;
 }
 
 .sheet__cut--h {
-  top: var(--label-h);
   right: 0;
   left: 0;
   height: 0.25mm;

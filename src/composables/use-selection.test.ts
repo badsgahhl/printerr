@@ -152,6 +152,43 @@ describe('selection to sheets', () => {
 
     expect(selection.state.blockedFirstSheetSlots).toEqual([])
   })
+
+  it('accepts higher slot numbers on a denser grid', () => {
+    const selection = fresh()
+    selection.toggleBlockedSlot(11, 16)
+
+    expect(selection.isBlocked(11)).toBe(true)
+  })
+
+  it('forgets blocked slots the new grid no longer has', () => {
+    // Switching from sixteen a sheet down to four would otherwise leave slot 12
+    // blocked invisibly, only to reappear on switching back.
+    const selection = fresh()
+    selection.toggleBlockedSlot(1, 16)
+    selection.toggleBlockedSlot(12, 16)
+
+    selection.pruneBlockedSlots(4)
+
+    expect(selection.state.blockedFirstSheetSlots).toEqual([1])
+  })
+
+  it('leaves the list alone when everything still fits', () => {
+    const selection = fresh()
+    selection.toggleBlockedSlot(1, 4)
+    selection.pruneBlockedSlots(9)
+
+    expect(selection.state.blockedFirstSheetSlots).toEqual([1])
+  })
+
+  it('lays labels out on whatever grid it is given', () => {
+    const selection = fresh()
+    const labels = Array.from({ length: 10 }, (_, index) => label(`p${index}`))
+    selection.applyDefaults(labels)
+
+    expect(selection.planFor(labels, 4)).toHaveLength(3)
+    expect(selection.planFor(labels, 9)).toHaveLength(2)
+    expect(selection.planFor(labels, 16)).toHaveLength(1)
+  })
 })
 
 describe('selection persistence', () => {

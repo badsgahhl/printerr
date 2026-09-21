@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 
 import { createSafeStorage, type SafeStorage } from '@/infra/safe-storage'
-import { DEFAULT_LABEL_STYLE, type LabelStyle, STYLE_LIMITS } from '@/print/geometry'
+import { DEFAULT_LABEL_STYLE, type LabelStyle, type SheetGrid, STYLE_LIMITS } from '@/print/geometry'
 
 export interface Settings {
   /** Shop name printed small at the foot of every label. */
@@ -39,6 +39,9 @@ export function normalizeStyle(raw: Partial<LabelStyle> | undefined): LabelStyle
   }
 
   return {
+    // Whole numbers only: half a column is not a sheet layout.
+    columns: Math.round(fix(source.columns, 'columns')),
+    rows: Math.round(fix(source.rows, 'rows')),
     paddingMm: fix(source.paddingMm, 'paddingMm'),
     nameMaxPx: fix(source.nameMaxPx, 'nameMaxPx'),
     priceMaxPx: fix(source.priceMaxPx, 'priceMaxPx'),
@@ -66,7 +69,20 @@ export function createSettings(deps: { storage?: SafeStorage } = {}) {
 
   function setStyle<K extends keyof LabelStyle>(key: K, value: number): void {
     const limits = STYLE_LIMITS[key]
-    state.labelStyle = { ...state.labelStyle, [key]: clamp(value, limits.min, limits.max) }
+    const clamped = clamp(value, limits.min, limits.max)
+    state.labelStyle = {
+      ...state.labelStyle,
+      [key]: key === 'columns' || key === 'rows' ? Math.round(clamped) : clamped
+    }
+  }
+
+  /** Switch the sheet division without disturbing the size settings. */
+  function setGrid(grid: SheetGrid): void {
+    state.labelStyle = {
+      ...state.labelStyle,
+      columns: clamp(Math.round(grid.columns), STYLE_LIMITS.columns.min, STYLE_LIMITS.columns.max),
+      rows: clamp(Math.round(grid.rows), STYLE_LIMITS.rows.min, STYLE_LIMITS.rows.max)
+    }
   }
 
   function resetStyle(): void {
@@ -79,7 +95,7 @@ export function createSettings(deps: { storage?: SafeStorage } = {}) {
     )
   }
 
-  return { state, brand, setStyle, resetStyle, isStyleDefault }
+  return { state, brand, setStyle, setGrid, resetStyle, isStyleDefault }
 }
 
 export type SettingsStore = ReturnType<typeof createSettings>

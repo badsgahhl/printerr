@@ -72,6 +72,24 @@ describe('label style settings', () => {
     expect(settings.state.labelStyle.paddingMm).toBe(STYLE_LIMITS.paddingMm.min)
   })
 
+  it('switches the sheet grid without touching the sizes', () => {
+    const settings = fresh()
+    settings.setStyle('priceMaxPx', 90)
+    settings.setGrid({ columns: 3, rows: 3 })
+
+    expect(settings.state.labelStyle.columns).toBe(3)
+    expect(settings.state.labelStyle.rows).toBe(3)
+    expect(settings.state.labelStyle.priceMaxPx).toBe(90)
+  })
+
+  it('keeps the grid whole and within range', () => {
+    const settings = fresh()
+    settings.setGrid({ columns: 2.7, rows: 99 })
+
+    expect(settings.state.labelStyle.columns).toBe(3)
+    expect(settings.state.labelStyle.rows).toBe(STYLE_LIMITS.rows.max)
+  })
+
   it('goes back to the defaults on reset', () => {
     const settings = fresh()
     settings.setStyle('priceMaxPx', 90)
@@ -101,6 +119,13 @@ describe('normalizeStyle', () => {
   it('fills in anything that is missing', () => {
     expect(normalizeStyle({ priceMaxPx: 80 })).toEqual({ ...DEFAULT_LABEL_STYLE, priceMaxPx: 80 })
     expect(normalizeStyle(undefined)).toEqual(DEFAULT_LABEL_STYLE)
+  })
+
+  it('repairs a stored grid that is not whole numbers', () => {
+    const style = normalizeStyle({ columns: 2.4, rows: 0 })
+
+    expect(style.columns).toBe(2)
+    expect(style.rows).toBe(STYLE_LIMITS.rows.min)
   })
 
   it('pulls stored values back into range', () => {

@@ -19,12 +19,17 @@
         @clear="selection.clearSelection()"
       />
 
-      <SheetStartPicker :is-blocked="selection.isBlocked" @toggle="selection.toggleBlockedSlot" />
+      <SheetStartPicker
+        :is-blocked="selection.isBlocked"
+        :label-style="settings.state.labelStyle"
+        @toggle="(slot) => selection.toggleBlockedSlot(slot, slots)"
+      />
 
       <StyleSettings
         :label-style="settings.state.labelStyle"
         :is-default="settings.isStyleDefault()"
         @change="settings.setStyle"
+        @grid="settings.setGrid"
         @reset="settings.resetStyle"
       />
 
@@ -77,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, watchEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 
 import LabelPicker from '@/components/LabelPicker.vue'
 import PrintPreview from '@/components/PrintPreview.vue'
@@ -91,6 +96,7 @@ import { selection } from '@/composables/use-selection'
 import { settings } from '@/composables/use-settings'
 import { createDomMeasurer, type DomMeasurer } from '@/infra/dom-measurer'
 import type { Label } from '@/lib/types'
+import { slotsPerSheet } from '@/print/geometry'
 
 const props = defineProps<{ labels: readonly Label[] }>()
 
@@ -102,7 +108,11 @@ const autoFit = createAutoFit((input) => {
   return measurer.measure(input)
 })
 
-const sheets = computed(() => selection.planFor(props.labels))
+const slots = computed(() => slotsPerSheet(settings.state.labelStyle))
+const sheets = computed(() => selection.planFor(props.labels, slots.value))
+
+// A smaller grid has fewer slots than the one that was blocked before.
+watch(slots, (count) => selection.pruneBlockedSlots(count))
 const selectedLabels = computed(() => props.labels.filter((label) => selection.isSelected(label.id)))
 
 const setBrandEnabled = (value: boolean | 'indeterminate') => void (settings.state.brandEnabled = value === true)
