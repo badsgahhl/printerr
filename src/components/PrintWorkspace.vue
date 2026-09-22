@@ -53,10 +53,16 @@
       <section class="rounded-lg border p-3 text-xs">
         <p class="font-medium">Vor dem Drucken im Dialog prüfen</p>
         <ul class="text-muted-foreground mt-1 list-disc pl-4">
-          <li>Ränder: <strong>Keine</strong></li>
+          <li>
+            Ränder: <strong>Keine</strong> — mit Rand passt ein Bogen nicht mehr auf eine Seite, und hinter jedem folgt
+            eine fast leere
+          </li>
           <li>Kopf- und Fußzeilen: <strong>aus</strong></li>
           <li>Skalierung: <strong>Standard</strong> (100 %)</li>
         </ul>
+        <p class="text-muted-foreground mt-2">
+          <strong>Hintergrundgrafiken</strong> müssen nicht angehakt werden: die Schnittlinien drucken so oder so.
+        </p>
       </section>
 
       <Button :disabled="sheets.length === 0" @click="print">
