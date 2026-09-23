@@ -1,4 +1,6 @@
 import type { FitBox } from '@/lib/fit-text'
+import type { PriceView } from '@/lib/price'
+import type { Label } from '@/lib/types'
 
 /**
  * Every millimetre the label is made of.
@@ -37,8 +39,7 @@ export interface SheetGrid {
 }
 
 /**
- * The three sizes a shop can want to change, the margin, and how the sheet is
- * divided.
+ * One size per text on the label, the margin, and how the sheet is divided.
  *
  * Each size is an *upper bound*, not a fixed size: the fitting pass still shrinks
  * text that would not fit. They are also stated for the reference label and
@@ -50,10 +51,33 @@ export interface LabelStyle {
   readonly rows: number
   readonly paddingMm: number
   readonly nameMaxPx: number
+  readonly subtitleMaxPx: number
+  readonly artNrMaxPx: number
   readonly priceMaxPx: number
-  /** Subtitle, article number, breakdown rows, note and shop name. */
-  readonly detailMaxPx: number
+  /** The qualifier under the price, e.g. "ohne Figuren". */
+  readonly priceSuffixMaxPx: number
+  /** Add-on rows: description, article number and amount share one size. */
+  readonly breakdownMaxPx: number
+  /** The hint at the foot, e.g. "Ausgabe an der Kasse!". */
+  readonly noteMaxPx: number
+  /** The shop name. */
+  readonly brandMaxPx: number
 }
+
+/** The style keys that are font sizes, as opposed to the grid and the margin. */
+export type FontSizeKey = Exclude<keyof LabelStyle, 'columns' | 'rows' | 'paddingMm'>
+
+/** Every font size, top to bottom in the order the texts sit on the label. */
+export const FONT_SIZE_KEYS: readonly FontSizeKey[] = [
+  'nameMaxPx',
+  'subtitleMaxPx',
+  'artNrMaxPx',
+  'priceMaxPx',
+  'priceSuffixMaxPx',
+  'breakdownMaxPx',
+  'noteMaxPx',
+  'brandMaxPx'
+]
 
 export const DEFAULT_LABEL_STYLE: LabelStyle = {
   columns: REFERENCE_COLUMNS,
@@ -65,8 +89,13 @@ export const DEFAULT_LABEL_STYLE: LabelStyle = {
    */
   paddingMm: 9,
   nameMaxPx: 34,
+  subtitleMaxPx: 15,
+  artNrMaxPx: 12,
   priceMaxPx: 72,
-  detailMaxPx: 12
+  priceSuffixMaxPx: 15.5,
+  breakdownMaxPx: 12,
+  noteMaxPx: 11,
+  brandMaxPx: 13
 }
 
 /** Grids that divide A4 without waste, in the order a shop would think of them. */
@@ -92,8 +121,15 @@ export const STYLE_LIMITS = {
   rows: { min: 1, max: 6, step: 1 },
   paddingMm: { min: 2, max: 16, step: 0.5 },
   nameMaxPx: { min: 16, max: 52, step: 1 },
+  subtitleMaxPx: { min: 8, max: 30, step: 0.5 },
+  artNrMaxPx: { min: 7, max: 24, step: 0.5 },
   priceMaxPx: { min: 30, max: 110, step: 1 },
-  detailMaxPx: { min: 8, max: 20, step: 0.5 }
+  priceSuffixMaxPx: { min: 8, max: 30, step: 0.5 },
+  breakdownMaxPx: { min: 7, max: 22, step: 0.5 },
+  // Roomier than the others: a hint like "Ausgabe an der Kasse!" is exactly what
+  // a shop wants to shout, and it is short enough to take the size.
+  noteMaxPx: { min: 7, max: 34, step: 0.5 },
+  brandMaxPx: { min: 7, max: 26, step: 0.5 }
 } as const
 
 // Proportions calibrated against the reference label; the sliders and the grid
@@ -126,6 +162,49 @@ const BASE_ROW_GAP_MM = 1.5
 /** Never let the price block collapse, however the sliders are set. */
 const MIN_PRICE_BLOCK_MM = 8
 
+/**
+ * What one label prints besides its name and price.
+ *
+ * Only what is printed takes up room. A label without a shop name gives that
+ * space to the price instead of keeping it empty -- which is also what stops the
+ * shop-name size from moving a label that has no shop name on it.
+ */
+export interface LabelContent {
+  readonly breakdownRows: number
+  /** Claims the article number column in every row as soon as one row has a number. */
+  readonly breakdownHasArtNr: boolean
+  readonly subtitle: boolean
+  readonly artNr: boolean
+  readonly priceSuffix: boolean
+  readonly note: boolean
+  readonly brand: boolean
+  /**
+   * The sizes the texts were fitted at, once they have been measured. A
+   * single-line text that had to shrink then claims only the height it still
+   * needs; until then everything claims its full height.
+   */
+  readonly fitPx?: Partial<Record<StyleKey, number>>
+}
+
+/** Read off a label exactly what PriceLabel is going to render, and nothing else. */
+export function labelContent(
+  label: Label,
+  view: PriceView,
+  brand: string | null,
+  fitPx?: Partial<Record<StyleKey, number>>
+): LabelContent {
+  return {
+    breakdownRows: view.breakdown.length,
+    breakdownHasArtNr: view.breakdown.some((row) => row.artNr !== null),
+    subtitle: Boolean(label.subtitle),
+    artNr: Boolean(label.artNr),
+    priceSuffix: Boolean(view.suffix),
+    note: Boolean(label.note),
+    brand: Boolean(brand),
+    fitPx
+  }
+}
+
 const clampGrid = (value: number, limit: { min: number; max: number }): number =>
   Math.min(limit.max, Math.max(limit.min, Math.trunc(value) || limit.min))
 
@@ -154,9 +233,9 @@ const widthScale = (style: LabelStyle): number => labelWidthMm(style) / REFERENC
 const heightScale = (style: LabelStyle): number => labelHeightMm(style) / REFERENCE_HEIGHT_MM
 const typeScale = (style: LabelStyle): number => Math.min(widthScale(style), heightScale(style))
 
-const nameScale = (style: LabelStyle): number => (style.nameMaxPx / DEFAULT_LABEL_STYLE.nameMaxPx) * heightScale(style)
-const detailScale = (style: LabelStyle): number =>
-  (style.detailMaxPx / DEFAULT_LABEL_STYLE.detailMaxPx) * heightScale(style)
+/** How far one text's box grows or shrinks: with its own size and with the label. */
+const sizeScale = (style: LabelStyle, key: FontSizeKey): number =>
+  (style[key] / DEFAULT_LABEL_STYLE[key]) * heightScale(style)
 
 /**
  * Below this a printer is likely to clip the labels on the edge of the sheet.
@@ -177,34 +256,95 @@ export const contentWidthMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number 
 export const contentHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
   labelHeightMm(style) - 2 * paddingMm(style)
 
-export const nameHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number => BASE_NAME_MM * nameScale(style)
+export const nameHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
+  BASE_NAME_MM * sizeScale(style, 'nameMaxPx')
 
 export const subtitleHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  BASE_SUBTITLE_MM * detailScale(style)
+  BASE_SUBTITLE_MM * sizeScale(style, 'subtitleMaxPx')
 
-export const artNrHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number => BASE_ART_NR_MM * detailScale(style)
+export const artNrHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
+  BASE_ART_NR_MM * sizeScale(style, 'artNrMaxPx')
 
 const headGapMm = (style: LabelStyle): number => BASE_HEAD_GAP_MM * heightScale(style)
 const footGapMm = (style: LabelStyle): number => BASE_FOOT_GAP_MM * heightScale(style)
 const breakdownGapMm = (style: LabelStyle): number => BASE_BREAKDOWN_GAP_MM * heightScale(style)
 const priceGapMm = (style: LabelStyle): number => BASE_PRICE_GAP_MM * heightScale(style)
 
-export const headHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  nameHeightMm(style) + subtitleHeightMm(style) + artNrHeightMm(style) + 2 * headGapMm(style)
+export const noteHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
+  BASE_NOTE_MM * sizeScale(style, 'noteMaxPx')
 
-export const noteHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number => BASE_NOTE_MM * detailScale(style)
-
-export const brandHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number => BASE_BRAND_MM * detailScale(style)
-
-export const footHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  noteHeightMm(style) + brandHeightMm(style) + footGapMm(style)
+export const brandHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
+  BASE_BRAND_MM * sizeScale(style, 'brandMaxPx')
 
 export const breakdownRowHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  BASE_BREAKDOWN_ROW_MM * detailScale(style)
+  BASE_BREAKDOWN_ROW_MM * sizeScale(style, 'breakdownMaxPx')
 
 /** Height of the small price qualifier under the big number. */
 export const priceSuffixHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  BASE_SUBTITLE_MM * detailScale(style)
+  BASE_SUBTITLE_MM * sizeScale(style, 'priceSuffixMaxPx')
+
+/**
+ * How much of its full-size box a single-line text still needs.
+ *
+ * A text too wide for its maximum is shrunk to fit, and would otherwise keep the
+ * height of the size it never got: turning its slider further up would then do
+ * nothing to the text and only push the price aside. Instead the box shrinks
+ * with the text, in proportion, so it keeps the same room around it as a text
+ * set at that size in the first place. Where a row holds two texts, the larger
+ * one decides.
+ */
+function shrinkOf(content: LabelContent, style: LabelStyle, keys: readonly StyleKey[]): number {
+  const fitted = content.fitPx
+  if (!fitted) return 1
+
+  const ranges = fontRanges(style)
+  let needed = 0
+  for (const key of keys) {
+    const size = fitted[key]
+    if (size === undefined) return 1
+    needed = Math.max(needed, size / ranges[key].maxPx)
+  }
+  return Math.min(1, needed)
+}
+
+interface TextHeights {
+  readonly subtitle: number
+  readonly artNr: number
+  readonly priceSuffix: number
+  readonly breakdownRow: number
+  readonly note: number
+  readonly brand: number
+}
+
+/** Heights of the single-line texts, as this label prints them. */
+function textHeightsMm(content: LabelContent, style: LabelStyle): TextHeights {
+  const fitted = (heightMm: number, ...keys: StyleKey[]): number => heightMm * shrinkOf(content, style, keys)
+  return {
+    subtitle: fitted(subtitleHeightMm(style), 'subtitle'),
+    artNr: fitted(artNrHeightMm(style), 'artNr'),
+    priceSuffix: fitted(priceSuffixHeightMm(style), 'priceSuffix'),
+    breakdownRow: fitted(breakdownRowHeightMm(style), 'breakdownLabel', 'breakdownAmount'),
+    note: fitted(noteHeightMm(style), 'note'),
+    brand: fitted(brandHeightMm(style), 'brand')
+  }
+}
+
+/** A text and the gap that separates it from the one above, or nothing when it is not printed. */
+const stacked = (printed: boolean, heightMm: number, gapMm: number): number => (printed ? gapMm + heightMm : 0)
+
+export function headHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  const heights = textHeightsMm(content, style)
+  const gap = headGapMm(style)
+  return (
+    nameHeightMm(style) + stacked(content.subtitle, heights.subtitle, gap) + stacked(content.artNr, heights.artNr, gap)
+  )
+}
+
+export function footHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  const heights = textHeightsMm(content, style)
+  const note = content.note ? heights.note : 0
+  return note + stacked(content.brand, heights.brand, content.note ? footGapMm(style) : 0)
+}
 
 export const amountWidthMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
   BASE_AMOUNT_WIDTH_MM * widthScale(style)
@@ -216,14 +356,19 @@ export function breakdownArtNrWidthMm(hasArtNr: boolean, style: LabelStyle = DEF
   return hasArtNr ? BASE_ARTNR_COLUMN_MM * widthScale(style) + rowGapMm(style) : 0
 }
 
-/** How tall the breakdown block is for a given number of rows. */
-export function breakdownHeightMm(rows: number, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
-  return rows <= 0 ? 0 : breakdownGapMm(style) + rows * breakdownRowHeightMm(style)
+/** How tall the breakdown block is, for as many rows as the label prints. */
+export function breakdownHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  const rows = content.breakdownRows
+  return rows <= 0 ? 0 : breakdownGapMm(style) + rows * textHeightsMm(content, style).breakdownRow
 }
 
 /** What is left for the price once head, foot and breakdown have taken their share. */
-export function priceBlockHeightMm(rows: number, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
-  const remaining = contentHeightMm(style) - headHeightMm(style) - footHeightMm(style) - breakdownHeightMm(rows, style)
+export function priceBlockHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  const remaining =
+    contentHeightMm(style) -
+    headHeightMm(content, style) -
+    footHeightMm(content, style) -
+    breakdownHeightMm(content, style)
   return Math.max(MIN_PRICE_BLOCK_MM * heightScale(style), remaining)
 }
 
@@ -247,29 +392,26 @@ const box = (widthMm: number, heightMm: number): FitBox => ({
 /**
  * The measuring boxes for one label, in CSS pixels.
  *
- * A pure function of the row count, the article-number flag and the style, so it
- * can be tested without a browser and cannot disagree with the stylesheet.
+ * A pure function of what the label prints and the style, so it can be tested
+ * without a browser and cannot disagree with the stylesheet.
  */
-export function labelBoxes(
-  breakdownRows: number,
-  breakdownHasArtNr = false,
-  style: LabelStyle = DEFAULT_LABEL_STYLE
-): LabelBoxes {
+export function labelBoxes(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): LabelBoxes {
   const width = contentWidthMm(style)
-  const priceHeight = priceBlockHeightMm(breakdownRows, style)
-  const suffixHeight = priceSuffixHeightMm(style)
-  const labelWidth = width - amountWidthMm(style) - breakdownArtNrWidthMm(breakdownHasArtNr, style) - rowGapMm(style)
+  const heights = textHeightsMm(content, style)
+  const priceHeight = priceBlockHeightMm(content, style)
+  const labelWidth =
+    width - amountWidthMm(style) - breakdownArtNrWidthMm(content.breakdownHasArtNr, style) - rowGapMm(style)
 
   return {
     name: box(width, nameHeightMm(style)),
-    subtitle: box(width, subtitleHeightMm(style)),
-    artNr: box(width, artNrHeightMm(style)),
-    price: box(width, priceHeight - suffixHeight - priceGapMm(style)),
-    priceSuffix: box(width, suffixHeight),
-    breakdownLabel: box(Math.max(6, labelWidth), breakdownRowHeightMm(style)),
-    breakdownAmount: box(amountWidthMm(style), breakdownRowHeightMm(style)),
-    note: box(width, noteHeightMm(style)),
-    brand: box(width, brandHeightMm(style))
+    subtitle: box(width, heights.subtitle),
+    artNr: box(width, heights.artNr),
+    price: box(width, priceHeight - stacked(content.priceSuffix, heights.priceSuffix, priceGapMm(style))),
+    priceSuffix: box(width, heights.priceSuffix),
+    breakdownLabel: box(Math.max(6, labelWidth), heights.breakdownRow),
+    breakdownAmount: box(amountWidthMm(style), heights.breakdownRow),
+    note: box(width, heights.note),
+    brand: box(width, heights.brand)
   }
 }
 
@@ -305,14 +447,14 @@ export function fontRanges(style: LabelStyle = DEFAULT_LABEL_STYLE): Readonly<Re
 
   return {
     name: range(11, style.nameMaxPx),
-    subtitle: range(7, style.detailMaxPx * 1.25),
-    artNr: range(7, style.detailMaxPx),
+    subtitle: range(7, style.subtitleMaxPx),
+    artNr: range(7, style.artNrMaxPx),
     price: range(22, style.priceMaxPx),
-    priceSuffix: range(8, style.detailMaxPx * 1.3),
-    breakdownLabel: range(6.5, style.detailMaxPx),
-    breakdownAmount: range(6.5, style.detailMaxPx),
-    note: range(6.5, style.detailMaxPx * 0.92),
-    brand: range(7, style.detailMaxPx * 1.1)
+    priceSuffix: range(8, style.priceSuffixMaxPx),
+    breakdownLabel: range(6.5, style.breakdownMaxPx),
+    breakdownAmount: range(6.5, style.breakdownMaxPx),
+    note: range(6.5, style.noteMaxPx),
+    brand: range(7, style.brandMaxPx)
   }
 }
 
@@ -332,33 +474,30 @@ export const FONT_SIZE_VARS: Readonly<Record<StyleKey, string>> = {
 const mm = (value: number): string => `${Math.round(value * 1000) / 1000}mm`
 
 /** Custom properties handed to the label element, so CSS reuses these numbers. */
-export function labelCssVars(
-  breakdownRows: number,
-  breakdownHasArtNr = false,
-  style: LabelStyle = DEFAULT_LABEL_STYLE
-): Record<string, string> {
+export function labelCssVars(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): Record<string, string> {
+  const heights = textHeightsMm(content, style)
   return {
     '--label-w': mm(labelWidthMm(style)),
     '--label-h': mm(labelHeightMm(style)),
     '--label-pad': mm(paddingMm(style)),
-    '--label-head-h': mm(headHeightMm(style)),
-    '--label-foot-h': mm(footHeightMm(style)),
+    '--label-head-h': mm(headHeightMm(content, style)),
+    '--label-foot-h': mm(footHeightMm(content, style)),
     '--label-name-h': mm(nameHeightMm(style)),
-    '--label-subtitle-h': mm(subtitleHeightMm(style)),
-    '--label-artnr-h': mm(artNrHeightMm(style)),
+    '--label-subtitle-h': mm(heights.subtitle),
+    '--label-artnr-h': mm(heights.artNr),
     '--label-head-gap': mm(headGapMm(style)),
     '--label-foot-gap': mm(footGapMm(style)),
-    '--label-price-h': mm(priceBlockHeightMm(breakdownRows, style)),
-    '--label-price-suffix-h': mm(priceSuffixHeightMm(style)),
+    '--label-price-h': mm(priceBlockHeightMm(content, style)),
+    '--label-price-suffix-h': mm(heights.priceSuffix),
     '--label-price-gap': mm(priceGapMm(style)),
-    '--label-breakdown-h': mm(breakdownHeightMm(breakdownRows, style)),
+    '--label-breakdown-h': mm(breakdownHeightMm(content, style)),
     '--label-breakdown-gap': mm(breakdownGapMm(style)),
-    '--label-breakdown-row-h': mm(breakdownRowHeightMm(style)),
+    '--label-breakdown-row-h': mm(heights.breakdownRow),
     '--label-amount-w': mm(amountWidthMm(style)),
-    '--label-artnr-col-w': mm(breakdownHasArtNr ? BASE_ARTNR_COLUMN_MM * widthScale(style) : 0),
+    '--label-artnr-col-w': mm(content.breakdownHasArtNr ? BASE_ARTNR_COLUMN_MM * widthScale(style) : 0),
     '--label-row-gap': mm(rowGapMm(style)),
-    '--label-note-h': mm(noteHeightMm(style)),
-    '--label-brand-h': mm(brandHeightMm(style))
+    '--label-note-h': mm(heights.note),
+    '--label-brand-h': mm(heights.brand)
   }
 }
 

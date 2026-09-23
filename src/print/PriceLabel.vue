@@ -14,7 +14,9 @@
     <div v-if="price.breakdown.length > 0" class="label__breakdown">
       <div v-for="(row, index) in price.breakdown" :key="index" class="label__row">
         <span class="label__row-label">{{ row.label }}</span>
-        <span v-if="hasBreakdownArtNr" class="label__row-artnr">{{ row.artNr ? `Art. ${row.artNr}` : '' }}</span>
+        <span v-if="content.breakdownHasArtNr" class="label__row-artnr">{{
+          row.artNr ? `Art. ${row.artNr}` : ''
+        }}</span>
         <span class="label__row-amount">{{ row.amountText }}</span>
       </div>
     </div>
@@ -31,7 +33,14 @@ import { computed } from 'vue'
 
 import { computePriceView } from '@/lib/price'
 import type { Label } from '@/lib/types'
-import { DEFAULT_LABEL_STYLE, FONT_SIZE_VARS, type LabelStyle, labelCssVars, type StyleKey } from '@/print/geometry'
+import {
+  DEFAULT_LABEL_STYLE,
+  FONT_SIZE_VARS,
+  labelContent,
+  labelCssVars,
+  type LabelStyle,
+  type StyleKey
+} from '@/print/geometry'
 
 const props = defineProps<{
   label: Label
@@ -49,14 +58,12 @@ const props = defineProps<{
 
 const price = computed(() => computePriceView(props.label))
 
-const hasBreakdownArtNr = computed(() => price.value.breakdown.some((row) => row.artNr !== null))
+// With the fitted sizes, so a text that had to shrink gives back the height it no
+// longer needs -- the same layout auto-fit measured the price against.
+const content = computed(() => labelContent(props.label, price.value, props.brand ?? null, props.fit))
 
 const style = computed<Record<string, string>>(() => {
-  const vars = labelCssVars(
-    price.value.breakdown.length,
-    hasBreakdownArtNr.value,
-    props.labelStyle ?? DEFAULT_LABEL_STYLE
-  )
+  const vars = labelCssVars(content.value, props.labelStyle ?? DEFAULT_LABEL_STYLE)
   for (const [key, cssVar] of Object.entries(FONT_SIZE_VARS) as [StyleKey, string][]) {
     const size = props.fit?.[key]
     if (size !== undefined) vars[cssVar] = `${size}px`

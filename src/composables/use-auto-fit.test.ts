@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createAutoFit } from '@/composables/use-auto-fit'
 import type { MeasureInput, TextMeasurer } from '@/lib/fit-text'
+import { computePriceView } from '@/lib/price'
 import type { Label, LabelExtra } from '@/lib/types'
-import { DEFAULT_LABEL_STYLE } from '@/print/geometry'
+import { DEFAULT_LABEL_STYLE, fontRanges, labelBoxes, labelContent } from '@/print/geometry'
 
 /** Same model as lib/fit-text.test.ts: jsdom cannot measure anything for real. */
 function fakeMeasurer(charWidthEm = 0.5): TextMeasurer {
@@ -161,6 +162,33 @@ describe('auto fit', () => {
 
     expect(measure.mock.calls.length).toBeGreaterThan(before)
     expect(autoFit.fitFor('M-01')?.price).toBeLessThanOrEqual(50)
+  })
+
+  it('fits the price into the height a shrunk text gave back', () => {
+    // A hint turned up further than the label is wide: it shrinks to the width
+    // and hands back the height it no longer needs.
+    const style = { ...DEFAULT_LABEL_STYLE, noteMaxPx: 34 }
+    const noted = label({ note: 'Ausgabe an der Kasse! Bitte beim Personal melden.' })
+    const view = computePriceView(noted)
+
+    const probe = createAutoFit(fakeMeasurer())
+    probe.ensureMeasured([noted], null, style)
+    const before = labelBoxes(labelContent(noted, view, null), style).price.height
+    const after = labelBoxes(labelContent(noted, view, null, probe.fitFor(noted.id)), style).price.height
+    expect(after).toBeGreaterThan(before)
+
+    // A face tall enough that the full-size price only fits into the room the
+    // hint gave back, not into the room it had before.
+    const priceMax = fontRanges(style).price.maxPx
+    const heightPerPx = (before + after) / 2 / priceMax
+    const measure = fakeMeasurer()
+    const autoFit = createAutoFit((input) =>
+      input.styleKey === 'price' ? { ...measure(input), height: input.fontSizePx * heightPerPx } : measure(input)
+    )
+    autoFit.ensureMeasured([noted], null, style)
+
+    expect(autoFit.fitFor(noted.id)?.price).toBe(priceMax)
+    expect(autoFit.overflowing.value.has(noted.id)).toBe(false)
   })
 
   it('gives the exhibition price its own size, separate from the base price', () => {

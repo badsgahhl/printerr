@@ -42,6 +42,12 @@ Größenregler gelten für ein Viertel-A4 und werden auf das gewählte Format
 umgerechnet, sodass ein Wechsel das Design behält statt die Schrift zu
 zertrümmern.
 
+Unter **Schriftgrößen** hat jeder Text des Schilds einen eigenen Regler, von oben
+nach unten: Produktname, Untertitel, Artikelnummer, Preis, Preiszusatz, Zusätze,
+Hinweis am Fuß, Ladenname. Jeder Wert ist eine Obergrenze. Passt ein Text nicht
+in die Breite, wird er kleiner gesetzt und beansprucht dann auch nur die Höhe,
+die er wirklich braucht; den Rest bekommt der Preis.
+
 Ab acht pro Bogen wird der Rand schmaler als die 3–6 mm, die Drucker am
 Blattrand nicht erreichen. Die App sagt das, statt es stillschweigend zu tun:
 betroffen sind nur die äußeren Schilder, und der Rand-Regler kann es ausgleichen.
@@ -157,6 +163,12 @@ Katalogänderungen und Seitenaufteilung lassen sich so ohne Browser prüfen.
   woanders und wird vergessen. Gestaltet wird mit Typografie und Rahmen, die
   drucken immer. Der Bogen setzt zusätzlich `print-color-adjust: exact`, damit
   auch Farbe, die doch einmal eine Fläche ist, nicht vom Haken abhängt.
+- **Ein Text bekommt nur die Höhe, die er gedruckt braucht.** Was ein Schild
+  nicht druckt (kein Untertitel, kein Ladenname), bekommt keinen Platz, und ein
+  Text, der für die Breite verkleinert werden musste, gibt die Höhe seiner
+  Maximalgröße zurück. Sonst verschöbe ein Regler Schilder, auf denen sich an
+  diesem Text sichtbar nichts ändert. Deshalb wird zweimal gemessen: erst die
+  einzeiligen Texte, dann der Preis in dem Platz, der übrig bleibt.
 - **Geld ist immer Integer-Cent.** Preise werden nie als Fließkommazahl addiert.
 - **105 × 148,5 mm, nicht ISO-A6.** A6 ist 105 × 148 mm; auf A4 blieben damit
   pro Bogen 1 mm Rest und die Schnittlinien würden wandern. Dasselbe gilt für

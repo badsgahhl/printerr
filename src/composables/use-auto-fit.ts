@@ -3,7 +3,14 @@ import { shallowRef } from 'vue'
 import { type FitRequest, type FitResult, fitText, type TextMeasurer } from '@/lib/fit-text'
 import { computePriceView } from '@/lib/price'
 import type { Label } from '@/lib/types'
-import { DEFAULT_LABEL_STYLE, fontRanges, labelBoxes, type LabelStyle, type StyleKey } from '@/print/geometry'
+import {
+  DEFAULT_LABEL_STYLE,
+  fontRanges,
+  labelBoxes,
+  labelContent,
+  type LabelStyle,
+  type StyleKey
+} from '@/print/geometry'
 
 /**
  * Font sizes for every label that is about to be printed.
@@ -30,13 +37,16 @@ function longest(values: readonly string[]): string {
   return values.reduce((winner, value) => (value.length > winner.length ? value : winner), '')
 }
 
-function requestsFor(label: Label, brand: string | null, style: LabelStyle): KeyedRequest[] {
+/**
+ * What to measure for one label.
+ *
+ * Without `fitted`, every box has the height of its text at full size. With it,
+ * the texts that had to shrink have given back what they no longer need, and
+ * the price block has grown by as much.
+ */
+function requestsFor(label: Label, brand: string | null, style: LabelStyle, fitted?: LabelFit): KeyedRequest[] {
   const view = computePriceView(label)
-  const boxes = labelBoxes(
-    view.breakdown.length,
-    view.breakdown.some((row) => row.artNr !== null),
-    style
-  )
+  const boxes = labelBoxes(labelContent(label, view, brand, fitted), style)
   const ranges = fontRanges(style)
   const requests: KeyedRequest[] = []
 
@@ -93,16 +103,29 @@ export function createAutoFit(measure: TextMeasurer) {
 
     for (const label of labels) {
       const fit: LabelFit = {}
-      for (const keyed of requestsFor(label, brand, style)) {
-        const key = cacheKey(keyed)
-        let result = cache.get(key)
-        if (!result) {
-          result = fitText(keyed.request, measure)
-          cache.set(key, result)
+      const overflowing = new Set<StyleKey>()
+
+      const run = (requests: readonly KeyedRequest[]): void => {
+        for (const keyed of requests) {
+          const key = cacheKey(keyed)
+          let result = cache.get(key)
+          if (!result) {
+            result = fitText(keyed.request, measure)
+            cache.set(key, result)
+          }
+          fit[keyed.styleKey] = result.fontSizePx
+          if (result.status === 'overflow') overflowing.add(keyed.styleKey)
+          else overflowing.delete(keyed.styleKey)
         }
-        fit[keyed.styleKey] = result.fontSizePx
-        if (result.status === 'overflow') nextOverflowing.add(label.id)
       }
+
+      run(requestsFor(label, brand, style))
+      // Now that the single-line texts know their real size, they claim only the
+      // height they need. The price takes whatever is left, so it is fitted
+      // again, into the room it actually gets -- which is never less than before.
+      run(requestsFor(label, brand, style, { ...fit }).filter(({ styleKey }) => styleKey === 'price'))
+
+      if (overflowing.size > 0) nextOverflowing.add(label.id)
       nextFits.set(label.id, fit)
     }
 

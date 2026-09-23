@@ -173,6 +173,42 @@ describe('PriceLabel sizing', () => {
     expect(nameHeight).toBeGreaterThan(20)
   })
 
+  it('keeps no room for a shop name it does not print', () => {
+    const priceHeight = (props: Record<string, unknown>): number => {
+      const { container, unmount } = render(PriceLabel, { props: { label: label(), ...props } })
+      const style = container.querySelector('.label')?.getAttribute('style') ?? ''
+      unmount()
+      return Number(/--label-price-h: ([\d.]+)mm/u.exec(style)?.[1])
+    }
+
+    // Turning the shop-name size up must not move a label that has no shop name.
+    const big = { ...DEFAULT_LABEL_STYLE, brandMaxPx: 26 }
+    expect(priceHeight({ brand: null, labelStyle: big })).toBe(priceHeight({ brand: null }))
+
+    expect(priceHeight({ brand: 'Holzkunst Musterladen' })).toBeLessThan(priceHeight({ brand: null }))
+  })
+
+  it('gives the price the height a shrunk hint no longer needs', () => {
+    const priceHeight = (noteMaxPx: number, fit?: Record<string, number>): number => {
+      const { container, unmount } = render(PriceLabel, {
+        props: {
+          label: label({ note: 'Ausgabe an der Kasse!' }),
+          labelStyle: { ...DEFAULT_LABEL_STYLE, noteMaxPx },
+          fit
+        }
+      })
+      const style = container.querySelector('.label')?.getAttribute('style') ?? ''
+      unmount()
+      return Number(/--label-price-h: ([\d.]+)mm/u.exec(style)?.[1])
+    }
+
+    // Measured at 20px because that is as wide as the label allows: a higher
+    // setting changes nothing about the text, so it must change nothing else.
+    expect(priceHeight(34, { note: 20 })).toBe(priceHeight(24, { note: 20 }))
+    // Before anything is measured the full size is kept free, as it always was.
+    expect(priceHeight(34)).toBeLessThan(priceHeight(24))
+  })
+
   it('reserves room for exactly as many breakdown rows as it prints', () => {
     const { container } = render(PriceLabel, {
       props: { label: label({ extras: [extra({ exhibited: true }), extra({ name: 'Engel', exhibited: true })] }) }

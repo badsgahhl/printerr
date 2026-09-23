@@ -27,7 +27,8 @@
 
       <StyleSettings
         :label-style="settings.state.labelStyle"
-        :is-default="settings.isStyleDefault()"
+        lade
+        :is-default="settings.isStyleDefault"
         @change="settings.setStyle"
         @grid="settings.setGrid"
         @reset="settings.resetStyle"
