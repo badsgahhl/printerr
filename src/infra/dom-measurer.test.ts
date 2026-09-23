@@ -63,6 +63,25 @@ describe('createDomMeasurer', () => {
     measurer.dispose()
   })
 
+  it('lifts the line clamp, so a description can report every line it needs', () => {
+    // The label clamps descriptions to two lines. Measured under that clamp, a
+    // description needing three would come back as two and be cut off in print.
+    const measurer = createDomMeasurer()
+    measurer.measure({
+      text: 'Komplettset (Stern + Außenbeleuchtung)',
+      fontSizePx: 19,
+      maxWidthPx: 177,
+      wrap: 'wrap',
+      styleKey: 'breakdownLabel'
+    })
+
+    const cell = document.querySelector<HTMLElement>('[data-printerr-measure] .label > div')
+    expect(cell?.className).toBe('label__row-label')
+    expect(cell?.style.getPropertyValue('-webkit-line-clamp')).toBe('none')
+
+    measurer.dispose()
+  })
+
   it('applies the requested font size and style class to the measured cell', () => {
     const measurer = createDomMeasurer()
     measurer.measure({

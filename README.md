@@ -48,6 +48,11 @@ Hinweis am Fuß, Ladenname. Jeder Wert ist eine Obergrenze. Passt ein Text nicht
 in die Breite, wird er kleiner gesetzt und beansprucht dann auch nur die Höhe,
 die er wirklich braucht; den Rest bekommt der Preis.
 
+Die Zusätze teilen sich eine Größe, damit die Liste ruhig aussieht. Eine lange
+Beschreibung wie „Komplettset (Stern + Außenbeleuchtung)" bricht dafür in eine
+zweite Zeile um, statt alle Zeilen klein zu halten, und die Spalten für
+Artikelnummer und Betrag sind nur so breit wie ihr Inhalt.
+
 Ab acht pro Bogen wird der Rand schmaler als die 3–6 mm, die Drucker am
 Blattrand nicht erreichen. Die App sagt das, statt es stillschweigend zu tun:
 betroffen sind nur die äußeren Schilder, und der Rand-Regler kann es ausgleichen.
@@ -167,8 +172,15 @@ Katalogänderungen und Seitenaufteilung lassen sich so ohne Browser prüfen.
   nicht druckt (kein Untertitel, kein Ladenname), bekommt keinen Platz, und ein
   Text, der für die Breite verkleinert werden musste, gibt die Höhe seiner
   Maximalgröße zurück. Sonst verschöbe ein Regler Schilder, auf denen sich an
-  diesem Text sichtbar nichts ändert. Deshalb wird zweimal gemessen: erst die
-  einzeiligen Texte, dann der Preis in dem Platz, der übrig bleibt.
+  diesem Text sichtbar nichts ändert. Deshalb wird der Reihe nach gemessen:
+  erst die einzeiligen Texte und die Spalten der Zusätze, dann die
+  Beschreibungen in der Breite, die übrig bleibt, zuletzt der Preis in der
+  Höhe, die übrig bleibt.
+- **`document.fonts.ready` allein reicht nicht zum Neumessen.** Es löst auf,
+  sobald gerade keine Schrift lädt, und das kann sein, bevor die Schildschrift
+  überhaupt angefordert wurde. Die erste Messung fordert sie dann erst an und
+  bekommt die Maße der Ersatzschrift. Deshalb wird nach jeder fertig geladenen
+  Schrift (`loadingdone`) neu gemessen.
 - **Geld ist immer Integer-Cent.** Preise werden nie als Fließkommazahl addiert.
 - **105 × 148,5 mm, nicht ISO-A6.** A6 ist 105 × 148 mm; auf A4 blieben damit
   pro Bogen 1 mm Rest und die Schnittlinien würden wandern. Dasselbe gilt für

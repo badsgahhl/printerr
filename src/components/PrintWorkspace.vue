@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 
 import LabelPicker from '@/components/LabelPicker.vue'
@@ -133,14 +134,19 @@ const setShowRuler = (value: boolean | 'indeterminate') => void (settings.state.
  */
 watchEffect(() => autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle))
 
-onMounted(() => {
-  // Everything measured before the embedded face arrives used fallback metrics
-  // and is therefore wrong; throw it away and measure again.
-  void document.fonts?.ready.then(() => {
-    autoFit.invalidate()
-    autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle)
-  })
-})
+/** Throw every measurement away and take them again. */
+function remeasure(): void {
+  autoFit.invalidate()
+  autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle)
+}
+
+// Everything measured before the embedded face arrives used fallback metrics and
+// is therefore wrong; throw it away and measure again. `fonts.ready` alone is not
+// enough: it resolves as soon as nothing is loading, which can be before the label
+// face was ever asked for -- the first measurement then asks for it and gets the
+// fallback's widths. So every face that finishes loading counts.
+useEventListener(document.fonts, 'loadingdone', remeasure)
+onMounted(() => void document.fonts?.ready.then(remeasure))
 
 onBeforeUnmount(() => measurer?.dispose())
 

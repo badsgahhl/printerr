@@ -143,7 +143,7 @@ describe('PriceLabel sizing', () => {
 
   it('applies fitted font sizes when measuring has produced them', () => {
     const { container } = render(PriceLabel, {
-      props: { label: label(), fit: { name: 18.5, price: 42 } }
+      props: { label: label(), fit: { sizes: { name: 18.5, price: 42 } } }
     })
     const style = container.querySelector('.label')?.getAttribute('style') ?? ''
 
@@ -194,7 +194,7 @@ describe('PriceLabel sizing', () => {
         props: {
           label: label({ note: 'Ausgabe an der Kasse!' }),
           labelStyle: { ...DEFAULT_LABEL_STYLE, noteMaxPx },
-          fit
+          fit: fit && { sizes: fit }
         }
       })
       const style = container.querySelector('.label')?.getAttribute('style') ?? ''
@@ -207,6 +207,23 @@ describe('PriceLabel sizing', () => {
     expect(priceHeight(34, { note: 20 })).toBe(priceHeight(24, { note: 20 }))
     // Before anything is measured the full size is kept free, as it always was.
     expect(priceHeight(34)).toBeLessThan(priceHeight(24))
+  })
+
+  it('gives a wrapped description the height of its second line', () => {
+    const { container } = render(PriceLabel, {
+      props: {
+        label: label({
+          extras: [extra({ name: 'Außenbeleuchtung' }), extra({ name: 'Komplettset (Stern + Außenbeleuchtung)' })]
+        }),
+        fit: { sizes: { breakdownLabel: 16 }, breakdownLines: [1, 2] }
+      }
+    })
+    const [first = 0, second = 0] = [...container.querySelectorAll('.label__row')].map((row) =>
+      Number(/height: ([\d.]+)mm/u.exec(row.getAttribute('style') ?? '')?.[1])
+    )
+
+    expect(first).toBeGreaterThan(0)
+    expect(second).toBeGreaterThan(first)
   })
 
   it('reserves room for exactly as many breakdown rows as it prints', () => {

@@ -98,8 +98,9 @@ Grids always divide A4 exactly. The number of slots per sheet comes from `slotsP
 `lib/fit-text.ts` is a pure font-size search that takes the measurer as an injected argument, because jsdom reports
 every dimension as zero. The real measurer is a detached `contain: strict` sandbox. It can't measure inside the
 preview, because the preview is scaled with `transform` and that distorts every reading. Measuring happens whenever
-the rendered set changes, not in `beforeprint`, which cannot wait for async work. Measurements are invalidated once
-`document.fonts.ready` resolves.
+the rendered set changes, not in `beforeprint`, which cannot wait for async work. Measurements are invalidated when
+`document.fonts.ready` resolves and again whenever a font face finishes loading (`loadingdone`), because `ready` can
+resolve before the label face was ever requested.
 
 The label font (Source Serif 4) is embedded in `src/assets/fonts/` rather than linked, so every machine gets the same
 metrics and therefore the same fitted sizes.

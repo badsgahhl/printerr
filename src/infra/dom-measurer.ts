@@ -19,6 +19,7 @@ const CLASS_FOR_STYLE: Readonly<Record<StyleKey, string>> = {
   price: 'label__price-main',
   priceSuffix: 'label__price-suffix',
   breakdownLabel: 'label__row-label',
+  breakdownArtNr: 'label__row-artnr',
   breakdownAmount: 'label__row-amount',
   note: 'label__note',
   brand: 'label__brand'
@@ -73,6 +74,10 @@ export function createDomMeasurer(doc: Document = document): DomMeasurer {
     cell.style.height = 'auto'
     cell.style.overflow = 'visible'
     cell.style.textOverflow = 'clip'
+    // A clamped description would report two lines however many it needs:
+    // Chrome applies the clamp to plain blocks too, not only to -webkit-box.
+    cell.style.setProperty('-webkit-line-clamp', 'none')
+    cell.style.setProperty('line-clamp', 'none')
     cell.style.fontSize = `${input.fontSizePx}px`
 
     if (input.wrap === 'nowrap') {

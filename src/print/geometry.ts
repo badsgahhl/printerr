@@ -147,17 +147,35 @@ const BASE_FOOT_GAP_MM = 1.5
 const BASE_BREAKDOWN_GAP_MM = 3
 const BASE_PRICE_GAP_MM = 2
 
-/** Width reserved for the amount column of a breakdown row. */
+/**
+ * The most the amount column of a breakdown row may take.
+ *
+ * Only an upper bound: the column is as wide as its widest amount, and every
+ * millimetre it does not need goes to the descriptions.
+ */
 const BASE_AMOUNT_WIDTH_MM = 30
 /**
- * Width reserved for the article number in a breakdown row.
+ * The most the article number column of a breakdown row may take.
  *
  * Claimed for every row as soon as one of them carries a number, so the columns
  * line up -- and, more importantly, so the description is measured against the
- * width it actually gets rather than the whole row.
+ * width it actually gets rather than the whole row. Like the amounts, only as
+ * wide as its widest entry.
  */
 const BASE_ARTNR_COLUMN_MM = 17
 const BASE_ROW_GAP_MM = 1.5
+/** Room for rounding in a column sized to its measured content. */
+const COLUMN_SLACK_PX = 1
+
+/**
+ * How many lines an add-on description may wrap to.
+ *
+ * A long one like "Komplettset (Stern + Außenbeleuchtung)" would otherwise set
+ * the size for every row, and the size slider could not make any of them bigger.
+ */
+export const BREAKDOWN_MAX_LINES = 2
+/** Line height of an add-on description, in em. label.css says the same. */
+export const BREAKDOWN_LINE_HEIGHT = 1.15
 
 /** Never let the price block collapse, however the sliders are set. */
 const MIN_PRICE_BLOCK_MM = 8
@@ -179,20 +197,33 @@ export interface LabelContent {
   readonly note: boolean
   readonly brand: boolean
   /**
-   * The sizes the texts were fitted at, once they have been measured. A
-   * single-line text that had to shrink then claims only the height it still
-   * needs; until then everything claims its full height.
+   * What measuring found, once it has run. A single-line text that had to shrink
+   * then claims only the height it still needs, and the breakdown columns only
+   * the width; until then everything claims its full size.
    */
-  readonly fitPx?: Partial<Record<StyleKey, number>>
+  readonly fit?: LabelFit
+}
+
+/**
+ * What measuring found out about one label.
+ *
+ * The sizes go straight to the stylesheet. The rest lays out the add-on rows,
+ * which the sizes alone cannot: how wide the two columns turned out, and how
+ * many lines each description took.
+ */
+export interface LabelFit {
+  /** The size each text was fitted at, in CSS pixels. */
+  readonly sizes: Partial<Record<StyleKey, number>>
+  /** The widest amount of the add-on rows, at its fitted size. */
+  readonly amountWidthPx?: number
+  /** The widest article number of the add-on rows, at its fitted size. */
+  readonly artNrWidthPx?: number
+  /** Lines each add-on description wraps to, row by row. */
+  readonly breakdownLines?: readonly number[]
 }
 
 /** Read off a label exactly what PriceLabel is going to render, and nothing else. */
-export function labelContent(
-  label: Label,
-  view: PriceView,
-  brand: string | null,
-  fitPx?: Partial<Record<StyleKey, number>>
-): LabelContent {
+export function labelContent(label: Label, view: PriceView, brand: string | null, fit?: LabelFit): LabelContent {
   return {
     breakdownRows: view.breakdown.length,
     breakdownHasArtNr: view.breakdown.some((row) => row.artNr !== null),
@@ -201,7 +232,7 @@ export function labelContent(
     priceSuffix: Boolean(view.suffix),
     note: Boolean(label.note),
     brand: Boolean(brand),
-    fitPx
+    fit
   }
 }
 
@@ -290,11 +321,11 @@ export const priceSuffixHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): nu
  * height of the size it never got: turning its slider further up would then do
  * nothing to the text and only push the price aside. Instead the box shrinks
  * with the text, in proportion, so it keeps the same room around it as a text
- * set at that size in the first place. Where a row holds two texts, the larger
- * one decides.
+ * set at that size in the first place. Where a row holds several texts, the
+ * largest one decides.
  */
 function shrinkOf(content: LabelContent, style: LabelStyle, keys: readonly StyleKey[]): number {
-  const fitted = content.fitPx
+  const fitted = content.fit?.sizes
   if (!fitted) return 1
 
   const ranges = fontRanges(style)
@@ -316,14 +347,20 @@ interface TextHeights {
   readonly brand: number
 }
 
-/** Heights of the single-line texts, as this label prints them. */
+/** The texts that share an add-on row. */
+const rowKeys = (content: LabelContent): StyleKey[] =>
+  content.breakdownHasArtNr
+    ? ['breakdownLabel', 'breakdownArtNr', 'breakdownAmount']
+    : ['breakdownLabel', 'breakdownAmount']
+
+/** Heights of the single-line texts, as this label prints them; an add-on row counts one line. */
 function textHeightsMm(content: LabelContent, style: LabelStyle): TextHeights {
   const fitted = (heightMm: number, ...keys: StyleKey[]): number => heightMm * shrinkOf(content, style, keys)
   return {
     subtitle: fitted(subtitleHeightMm(style), 'subtitle'),
     artNr: fitted(artNrHeightMm(style), 'artNr'),
     priceSuffix: fitted(priceSuffixHeightMm(style), 'priceSuffix'),
-    breakdownRow: fitted(breakdownRowHeightMm(style), 'breakdownLabel', 'breakdownAmount'),
+    breakdownRow: fitted(breakdownRowHeightMm(style), ...rowKeys(content)),
     note: fitted(noteHeightMm(style), 'note'),
     brand: fitted(brandHeightMm(style), 'brand')
   }
@@ -346,20 +383,52 @@ export function footHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_
   return note + stacked(content.brand, heights.brand, content.note ? footGapMm(style) : 0)
 }
 
-export const amountWidthMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  BASE_AMOUNT_WIDTH_MM * widthScale(style)
+const amountCapMm = (style: LabelStyle): number => BASE_AMOUNT_WIDTH_MM * widthScale(style)
+const artNrCapMm = (style: LabelStyle): number => BASE_ARTNR_COLUMN_MM * widthScale(style)
 
 export const rowGapMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number => BASE_ROW_GAP_MM * widthScale(style)
 
-/** Width the article number column takes up, gap included. */
-export function breakdownArtNrWidthMm(hasArtNr: boolean, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
-  return hasArtNr ? BASE_ARTNR_COLUMN_MM * widthScale(style) + rowGapMm(style) : 0
+/** A column as wide as its measured content, but never wider than its cap. */
+const columnMm = (capMm: number, measuredPx: number | undefined): number =>
+  measuredPx === undefined ? capMm : Math.min(capMm, pxToMm(measuredPx + COLUMN_SLACK_PX))
+
+/** Width of the amount column in the add-on rows. */
+export function amountColumnMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  return columnMm(amountCapMm(style), content.fit?.amountWidthPx)
+}
+
+/** Width of the article number column in the add-on rows; nothing when no row has one. */
+export function artNrColumnMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  return content.breakdownHasArtNr ? columnMm(artNrCapMm(style), content.fit?.artNrWidthPx) : 0
+}
+
+/** What an add-on description has left once the columns and the gaps between them are taken. */
+export function descriptionWidthMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
+  const artNr = artNrColumnMm(content, style)
+  const taken = amountColumnMm(content, style) + rowGapMm(style) + (artNr > 0 ? artNr + rowGapMm(style) : 0)
+  return Math.max(6, contentWidthMm(style) - taken)
+}
+
+/**
+ * The height of each add-on row.
+ *
+ * One line is the row height the design is calibrated with; every further line
+ * a description wraps to adds its line height, at the size it was set in.
+ */
+export function breakdownRowHeightsMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number[] {
+  const oneLine = textHeightsMm(content, style).breakdownRow
+  const size = content.fit?.sizes.breakdownLabel ?? fontRanges(style).breakdownLabel.maxPx
+  const extraLine = pxToMm(size * BREAKDOWN_LINE_HEIGHT)
+  return Array.from(
+    { length: Math.max(0, content.breakdownRows) },
+    (_, row) => oneLine + (Math.max(1, content.fit?.breakdownLines?.[row] ?? 1) - 1) * extraLine
+  )
 }
 
 /** How tall the breakdown block is, for as many rows as the label prints. */
 export function breakdownHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
-  const rows = content.breakdownRows
-  return rows <= 0 ? 0 : breakdownGapMm(style) + rows * textHeightsMm(content, style).breakdownRow
+  const rows = breakdownRowHeightsMm(content, style)
+  return rows.length === 0 ? 0 : breakdownGapMm(style) + rows.reduce((sum, height) => sum + height, 0)
 }
 
 /** What is left for the price once head, foot and breakdown have taken their share. */
@@ -378,7 +447,9 @@ export interface LabelBoxes {
   readonly artNr: FitBox
   readonly price: FitBox
   readonly priceSuffix: FitBox
+  /** One line high: a description measures its lines against `BREAKDOWN_MAX_LINES`, not this. */
   readonly breakdownLabel: FitBox
+  readonly breakdownArtNr: FitBox
   readonly breakdownAmount: FitBox
   readonly note: FitBox
   readonly brand: FitBox
@@ -399,8 +470,6 @@ export function labelBoxes(content: LabelContent, style: LabelStyle = DEFAULT_LA
   const width = contentWidthMm(style)
   const heights = textHeightsMm(content, style)
   const priceHeight = priceBlockHeightMm(content, style)
-  const labelWidth =
-    width - amountWidthMm(style) - breakdownArtNrWidthMm(content.breakdownHasArtNr, style) - rowGapMm(style)
 
   return {
     name: box(width, nameHeightMm(style)),
@@ -408,8 +477,11 @@ export function labelBoxes(content: LabelContent, style: LabelStyle = DEFAULT_LA
     artNr: box(width, heights.artNr),
     price: box(width, priceHeight - stacked(content.priceSuffix, heights.priceSuffix, priceGapMm(style))),
     priceSuffix: box(width, heights.priceSuffix),
-    breakdownLabel: box(Math.max(6, labelWidth), heights.breakdownRow),
-    breakdownAmount: box(amountWidthMm(style), heights.breakdownRow),
+    breakdownLabel: box(descriptionWidthMm(content, style), heights.breakdownRow),
+    // The columns are fitted into their caps; how much of that they then use
+    // is what `amountColumnMm` and `artNrColumnMm` report.
+    breakdownArtNr: box(artNrCapMm(style), heights.breakdownRow),
+    breakdownAmount: box(amountCapMm(style), heights.breakdownRow),
     note: box(width, heights.note),
     brand: box(width, heights.brand)
   }
@@ -422,6 +494,7 @@ export type StyleKey =
   | 'price'
   | 'priceSuffix'
   | 'breakdownLabel'
+  | 'breakdownArtNr'
   | 'breakdownAmount'
   | 'note'
   | 'brand'
@@ -452,6 +525,7 @@ export function fontRanges(style: LabelStyle = DEFAULT_LABEL_STYLE): Readonly<Re
     price: range(22, style.priceMaxPx),
     priceSuffix: range(8, style.priceSuffixMaxPx),
     breakdownLabel: range(6.5, style.breakdownMaxPx),
+    breakdownArtNr: range(6, style.breakdownMaxPx * 0.9),
     breakdownAmount: range(6.5, style.breakdownMaxPx),
     note: range(6.5, style.noteMaxPx),
     brand: range(7, style.brandMaxPx)
@@ -466,6 +540,7 @@ export const FONT_SIZE_VARS: Readonly<Record<StyleKey, string>> = {
   price: '--fs-price',
   priceSuffix: '--fs-price-suffix',
   breakdownLabel: '--fs-breakdown-label',
+  breakdownArtNr: '--fs-breakdown-artnr',
   breakdownAmount: '--fs-breakdown-amount',
   note: '--fs-note',
   brand: '--fs-brand'
@@ -493,12 +568,17 @@ export function labelCssVars(content: LabelContent, style: LabelStyle = DEFAULT_
     '--label-breakdown-h': mm(breakdownHeightMm(content, style)),
     '--label-breakdown-gap': mm(breakdownGapMm(style)),
     '--label-breakdown-row-h': mm(heights.breakdownRow),
-    '--label-amount-w': mm(amountWidthMm(style)),
-    '--label-artnr-col-w': mm(content.breakdownHasArtNr ? BASE_ARTNR_COLUMN_MM * widthScale(style) : 0),
+    '--label-amount-w': mm(amountColumnMm(content, style)),
+    '--label-artnr-col-w': mm(artNrColumnMm(content, style)),
     '--label-row-gap': mm(rowGapMm(style)),
     '--label-note-h': mm(heights.note),
     '--label-brand-h': mm(heights.brand)
   }
+}
+
+/** The height of each add-on row, for the stylesheet. */
+export function breakdownRowHeightsCss(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): string[] {
+  return breakdownRowHeightsMm(content, style).map(mm)
 }
 
 /** Custom properties for one A4 sheet and its grid. */

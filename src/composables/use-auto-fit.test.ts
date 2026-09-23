@@ -4,7 +4,7 @@ import { createAutoFit } from '@/composables/use-auto-fit'
 import type { MeasureInput, TextMeasurer } from '@/lib/fit-text'
 import { computePriceView } from '@/lib/price'
 import type { Label, LabelExtra } from '@/lib/types'
-import { DEFAULT_LABEL_STYLE, fontRanges, labelBoxes, labelContent } from '@/print/geometry'
+import { amountColumnMm, DEFAULT_LABEL_STYLE, fontRanges, labelBoxes, labelContent } from '@/print/geometry'
 
 /** Same model as lib/fit-text.test.ts: jsdom cannot measure anything for real. */
 function fakeMeasurer(charWidthEm = 0.5): TextMeasurer {
@@ -54,10 +54,11 @@ describe('auto fit', () => {
     autoFit.ensureMeasured([label({ extras: [extra()] })], 'Holzkunst Musterladen')
 
     const fit = autoFit.fitFor('M-01')
-    expect(Object.keys(fit ?? {}).sort()).toEqual([
+    expect(Object.keys(fit?.sizes ?? {}).sort()).toEqual([
       'artNr',
       'brand',
       'breakdownAmount',
+      'breakdownArtNr',
       'breakdownLabel',
       'name',
       'note',
@@ -72,9 +73,9 @@ describe('auto fit', () => {
     autoFit.ensureMeasured([label({ subtitle: null, artNr: null, note: null, priceNote: null })], null)
 
     const fit = autoFit.fitFor('M-01')
-    expect(fit?.subtitle).toBeUndefined()
-    expect(fit?.brand).toBeUndefined()
-    expect(fit?.name).toBeGreaterThan(0)
+    expect(fit?.sizes.subtitle).toBeUndefined()
+    expect(fit?.sizes.brand).toBeUndefined()
+    expect(fit?.sizes.name).toBeGreaterThan(0)
   })
 
   it('measures each distinct text only once', () => {
@@ -104,7 +105,7 @@ describe('auto fit', () => {
       null
     )
 
-    expect(autoFit.fitFor('long')?.name).toBeLessThan(autoFit.fitFor('short')?.name ?? 0)
+    expect(autoFit.fitFor('long')?.sizes.name).toBeLessThan(autoFit.fitFor('short')?.sizes.name ?? 0)
   })
 
   it('flags a label whose text cannot be made to fit', () => {
@@ -141,10 +142,10 @@ describe('auto fit', () => {
     const small = { ...DEFAULT_LABEL_STYLE, priceMaxPx: 40 }
 
     autoFit.ensureMeasured([label({ id: 'big' })], null, DEFAULT_LABEL_STYLE)
-    const atDefault = autoFit.fitFor('big')?.price
+    const atDefault = autoFit.fitFor('big')?.sizes.price
 
     autoFit.ensureMeasured([label({ id: 'big' })], null, small)
-    const atSmall = autoFit.fitFor('big')?.price
+    const atSmall = autoFit.fitFor('big')?.sizes.price
 
     expect(atSmall).toBeLessThan(atDefault ?? 0)
   })
@@ -161,7 +162,7 @@ describe('auto fit', () => {
     autoFit.ensureMeasured([label()], null, { ...DEFAULT_LABEL_STYLE, priceMaxPx: 50 })
 
     expect(measure.mock.calls.length).toBeGreaterThan(before)
-    expect(autoFit.fitFor('M-01')?.price).toBeLessThanOrEqual(50)
+    expect(autoFit.fitFor('M-01')?.sizes.price).toBeLessThanOrEqual(50)
   })
 
   it('fits the price into the height a shrunk text gave back', () => {
@@ -187,8 +188,66 @@ describe('auto fit', () => {
     )
     autoFit.ensureMeasured([noted], null, style)
 
-    expect(autoFit.fitFor(noted.id)?.price).toBe(priceMax)
+    expect(autoFit.fitFor(noted.id)?.sizes.price).toBe(priceMax)
     expect(autoFit.overflowing.value.has(noted.id)).toBe(false)
+  })
+
+  describe('add-on rows', () => {
+    const lamp = extra({ name: 'Außenbeleuchtung', artNr: null, priceCents: 3020, exhibited: false })
+    const set = extra({
+      name: 'Komplettset (Stern + Außenbeleuchtung)',
+      artNr: null,
+      priceCents: 9630,
+      exhibited: false
+    })
+    const style = { ...DEFAULT_LABEL_STYLE, breakdownMaxPx: 16 }
+
+    it('wraps a long description instead of holding every row small', () => {
+      const autoFit = createAutoFit(fakeMeasurer())
+      autoFit.ensureMeasured([label({ id: 'stern', extras: [lamp, set] })], null, style)
+      const fit = autoFit.fitFor('stern')
+
+      expect(fit?.sizes.breakdownLabel).toBe(fontRanges(style).breakdownLabel.maxPx)
+      expect(fit?.breakdownLines).toEqual([1, 2])
+      expect(autoFit.overflowing.value.has('stern')).toBe(false)
+    })
+
+    it('shrinks every description together once one will not fit even on two lines', () => {
+      // Three lines at full size, two once it is somewhat smaller.
+      const endless = extra({ name: 'Figurengruppe '.repeat(6).trim(), artNr: null, exhibited: false })
+      const autoFit = createAutoFit(fakeMeasurer())
+      autoFit.ensureMeasured([label({ id: 'lang', extras: [lamp, endless] })], null, style)
+      const fit = autoFit.fitFor('lang')
+
+      expect(fit?.sizes.breakdownLabel).toBeLessThan(fontRanges(style).breakdownLabel.maxPx)
+      expect(fit?.breakdownLines).toEqual([1, 2])
+      expect(autoFit.overflowing.value.has('lang')).toBe(false)
+    })
+
+    it('narrows the amount column to what the amounts need', () => {
+      const star = label({ id: 'stern', extras: [lamp, set] })
+      const autoFit = createAutoFit(fakeMeasurer())
+      autoFit.ensureMeasured([star], null, style)
+      const view = computePriceView(star)
+
+      // "96,30 €" is seven characters of half an em at 16px.
+      expect(autoFit.fitFor('stern')?.amountWidthPx).toBe(7 * 0.5 * 16)
+      expect(amountColumnMm(labelContent(star, view, null, autoFit.fitFor('stern')), style)).toBeLessThan(
+        amountColumnMm(labelContent(star, view, null), style)
+      )
+    })
+
+    it('gives the article numbers a size and a column of their own', () => {
+      const autoFit = createAutoFit(fakeMeasurer())
+      autoFit.ensureMeasured([label({ extras: [extra({ exhibited: false })] })], null, style)
+      const fit = autoFit.fitFor('M-01')
+
+      // Its own range, not the description's: the numbers are set a size smaller.
+      const range = fontRanges(style).breakdownArtNr
+      expect(fit?.sizes.breakdownArtNr).toBeGreaterThanOrEqual(range.minPx)
+      expect(fit?.sizes.breakdownArtNr).toBeLessThanOrEqual(range.maxPx)
+      expect(fit?.artNrWidthPx).toBeGreaterThan(0)
+    })
   })
 
   it('gives the exhibition price its own size, separate from the base price', () => {
@@ -203,6 +262,6 @@ describe('auto fit', () => {
 
     // The exhibited label has a breakdown block, which leaves less room for the
     // price -- so the two must not share a cache entry.
-    expect(autoFit.fitFor('plain')?.price).not.toBe(autoFit.fitFor('exhibited')?.price)
+    expect(autoFit.fitFor('plain')?.sizes.price).not.toBe(autoFit.fitFor('exhibited')?.sizes.price)
   })
 })

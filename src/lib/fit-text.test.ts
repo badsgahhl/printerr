@@ -187,6 +187,40 @@ describe('fitText on single-line text', () => {
   })
 })
 
+describe('fitText with a line limit', () => {
+  const measure = createFakeMeasurer()
+  const lines = { max: 2, lineHeight: 1.2 } as const
+
+  it('keeps the full size when the text fits the lines it may take', () => {
+    // 304px at 16px is too wide for one line of 200px, but two will do; the box
+    // height is deliberately useless, because the line limit replaces it.
+    const result = fitText(
+      request({ text: 'Komplettset (Stern + Außenbeleuchtung)', box: box(200, 1), maxPx: 16, lines }),
+      measure
+    )
+
+    expect(result.fontSizePx).toBe(16)
+    expect(result.status).toBe('fits')
+  })
+
+  it('shrinks only once even the allowed lines are not enough', () => {
+    const text = 'Räuchermann Bergmann mit Laterne und Grubenlampe, große Ausführung'
+    const result = fitText(request({ text, box: box(200, 1), maxPx: 16, lines }), measure)
+    const linesAt = (fontSizePx: number): number =>
+      measure({ text, fontSizePx, maxWidthPx: 199.5, wrap: 'wrap', styleKey: 'name' }).height / (fontSizePx * 1.2)
+
+    expect(result.status).toBe('shrunk')
+    expect(linesAt(result.fontSizePx)).toBeLessThanOrEqual(2)
+    expect(linesAt(result.fontSizePx + 0.5)).toBeGreaterThan(2)
+  })
+
+  it('reports the width it measured, so a column can be sized to it', () => {
+    const result = fitText(request({ text: '96,30 €', wrap: 'nowrap', maxPx: 12 }), measure)
+
+    expect(result.measuredWidth).toBe(7 * 0.5 * 12)
+  })
+})
+
 describe('the fake measurer itself', () => {
   it('is monotonic in font size, as the binary search assumes', () => {
     // Without this the search would be tested against a model that breaks its

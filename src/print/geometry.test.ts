@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  breakdownArtNrWidthMm,
+  amountColumnMm,
+  artNrColumnMm,
+  BREAKDOWN_LINE_HEIGHT,
+  breakdownRowHeightsMm,
   breakdownHeightMm,
   contentHeightMm,
   contentWidthMm,
   DEFAULT_LABEL_STYLE,
+  descriptionWidthMm,
   fontRanges,
   FONT_SIZE_KEYS,
   footHeightMm,
@@ -13,6 +17,7 @@ import {
   gridOf,
   headHeightMm,
   type LabelContent,
+  type LabelFit,
   type LabelStyle,
   labelBoxes,
   labelCssVars,
@@ -20,6 +25,7 @@ import {
   labelWidthMm,
   mmToPx,
   paddingMm,
+  pxToMm,
   priceBlockHeightMm,
   REFERENCE_HEIGHT_MM,
   SAFE_PADDING_MM,
@@ -161,7 +167,7 @@ describe('label boxes at the default grid', () => {
   })
 
   it('reserves nothing for article numbers when no row has one', () => {
-    expect(breakdownArtNrWidthMm(false)).toBe(0)
+    expect(artNrColumnMm(full(2))).toBe(0)
   })
 })
 
@@ -238,7 +244,7 @@ describe('label boxes follow the text sizes', () => {
 
 describe('a single-line text that had to shrink', () => {
   it('claims only the height it still needs, and gives the rest to the price', () => {
-    const shrunk = full(2, { fitPx: { note: fontRanges().note.maxPx / 2 } })
+    const shrunk = full(2, { fit: { sizes: { note: fontRanges().note.maxPx / 2 } } })
 
     expect(labelBoxes(shrunk).note.height).toBeCloseTo(labelBoxes(full(2)).note.height / 2, 6)
     expect(labelBoxes(shrunk).price.height).toBeGreaterThan(labelBoxes(full(2)).price.height)
@@ -247,17 +253,17 @@ describe('a single-line text that had to shrink', () => {
   it('moves nothing once its slider is past the size it fits at', () => {
     // "Ausgabe an der Kasse!" stops growing at the width of the label. Turning
     // its slider further up must not go on taking height from the price.
-    const fitted = full(2, { fitPx: { note: 20 } })
+    const fitted = full(2, { fit: { sizes: { note: 20 } } })
 
     expect(labelCssVars(fitted, styled({ noteMaxPx: 34 }))).toEqual(labelCssVars(fitted, styled({ noteMaxPx: 24 })))
   })
 
   it('claims its full height until it has been measured', () => {
-    expect(labelBoxes(full(2, { fitPx: {} }))).toEqual(labelBoxes(full(2)))
+    expect(labelBoxes(full(2, { fit: { sizes: {} } }))).toEqual(labelBoxes(full(2)))
   })
 
   it('never claims more than its full height', () => {
-    const oversized = full(2, { fitPx: { note: fontRanges().note.maxPx * 3 } })
+    const oversized = full(2, { fit: { sizes: { note: fontRanges().note.maxPx * 3 } } })
 
     expect(labelBoxes(oversized).note).toEqual(labelBoxes(full(2)).note)
   })
@@ -265,7 +271,7 @@ describe('a single-line text that had to shrink', () => {
   it('keeps an add-on row as tall as the larger of its two texts', () => {
     const ranges = fontRanges()
     const content = full(2, {
-      fitPx: { breakdownLabel: ranges.breakdownLabel.minPx, breakdownAmount: ranges.breakdownAmount.maxPx }
+      fit: { sizes: { breakdownLabel: ranges.breakdownLabel.minPx, breakdownAmount: ranges.breakdownAmount.maxPx } }
     })
 
     expect(breakdownHeightMm(content)).toBe(breakdownHeightMm(full(2)))
@@ -274,12 +280,55 @@ describe('a single-line text that had to shrink', () => {
   it('still spends the content height exactly', () => {
     const ranges = fontRanges()
     const content = full(3, {
-      fitPx: Object.fromEntries(Object.entries(ranges).map(([key, range]) => [key, range.minPx]))
+      fit: { sizes: Object.fromEntries(Object.entries(ranges).map(([key, range]) => [key, range.minPx])) }
     })
     const total =
       headHeightMm(content) + footHeightMm(content) + priceBlockHeightMm(content) + breakdownHeightMm(content)
 
     expect(total).toBeCloseTo(contentHeightMm(), 10)
+  })
+})
+
+describe('add-on rows', () => {
+  const measured = (over: Partial<LabelFit>, rows = 2): LabelContent => full(rows, { fit: { sizes: {}, ...over } })
+
+  it('makes the amount column only as wide as its widest amount', () => {
+    // A fixed 30mm for "96,30 €" left the descriptions 55mm, and the longest of
+    // them held every row small.
+    const narrow = measured({ amountWidthPx: 40 })
+
+    expect(amountColumnMm(narrow)).toBeCloseTo(pxToMm(41), 6)
+    expect(descriptionWidthMm(narrow)).toBeGreaterThan(descriptionWidthMm(full(2)))
+  })
+
+  it('never lets the amounts take more than their cap', () => {
+    expect(amountColumnMm(measured({ amountWidthPx: 10_000 }))).toBe(amountColumnMm(full(2)))
+  })
+
+  it('sizes the article number column the same way, and only when a row has one', () => {
+    const numbered = full(2, { breakdownHasArtNr: true, fit: { sizes: {}, artNrWidthPx: 30 } })
+
+    expect(artNrColumnMm(numbered)).toBeCloseTo(pxToMm(31), 6)
+    expect(artNrColumnMm(measured({ artNrWidthPx: 30 }))).toBe(0)
+  })
+
+  it('gives a description that wraps one more line of height, at the size it was set in', () => {
+    const size = 16
+    const oneLine = measured({ sizes: { breakdownLabel: size } })
+    const wrapped = measured({ sizes: { breakdownLabel: size }, breakdownLines: [1, 2] })
+    const [first = 0, second = 0] = breakdownRowHeightsMm(wrapped)
+
+    expect(second - first).toBeCloseTo(pxToMm(size * BREAKDOWN_LINE_HEIGHT), 6)
+    expect(breakdownHeightMm(wrapped) - breakdownHeightMm(oneLine)).toBeCloseTo(second - first, 6)
+  })
+
+  it('still spends the content height exactly when descriptions wrap, taking it from the price', () => {
+    const wrapped = measured({ breakdownLines: [2, 1, 2] }, 3)
+    const total =
+      headHeightMm(wrapped) + footHeightMm(wrapped) + priceBlockHeightMm(wrapped) + breakdownHeightMm(wrapped)
+
+    expect(total).toBeCloseTo(contentHeightMm(), 10)
+    expect(priceBlockHeightMm(wrapped)).toBeLessThan(priceBlockHeightMm(full(3)))
   })
 })
 

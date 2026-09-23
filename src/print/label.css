@@ -114,26 +114,36 @@
   gap: var(--label-row-gap, 1.5mm);
 }
 
+/* Up to two lines, all rows at one size: a long description wraps instead of
+   holding every row small. The line height is BREAKDOWN_LINE_HEIGHT in
+   geometry.ts, which sizes the rows; the clamp only catches a measurement that
+   was off. */
 .label__row-label {
+  display: -webkit-box;
+  min-width: 0;
   flex: 1;
+  -webkit-box-orient: vertical;
   font-size: var(--fs-breakdown-label, 10px);
+  -webkit-line-clamp: 2;
+  line-height: 1.15;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: balance;
 }
 
-/* A fixed column, claimed for every row once any row has a number, so the
-   descriptions and amounts stay in line. */
+/* A column claimed for every row once any row has a number, so the descriptions
+   and amounts stay in line. */
 .label__row-artnr {
   width: var(--label-artnr-col-w);
+  flex: none;
   color: #555;
-  font-size: calc(var(--fs-breakdown-label, 10px) * 0.9);
+  font-size: var(--fs-breakdown-artnr, 9px);
   overflow: hidden;
   white-space: nowrap;
 }
 
 .label__row-amount {
   width: var(--label-amount-w);
+  flex: none;
   font-size: var(--fs-breakdown-amount, 10px);
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
