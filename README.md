@@ -87,12 +87,20 @@ bei 55 px stehen, obwohl über und unter ihm zwei Drittel des Platzes leer waren
 Mit der neuen Grenze sind daraus 93 px.
 
 Auf quadratischeren Formaten bremst dagegen die Breite, nicht der Regler: dort
-hilft nur weniger Text. Deshalb der Schalter **Glatte Preise kürzen** unter
-_Preis_: er schreibt _139,– €_ statt _139,00 €_, wie es im Schaufenster üblich
-ist. Drei Zeichen weniger sind auf dem Viertel-A4 rund 19 % mehr Schriftgröße,
-auf dem 16er-Bogen 18 %. Preise mit echten Cent bleiben unangetastet —
-_249,50 €_ bleibt _249,50 €_ —, und die Aufschlüsselung darunter wird
-mitgekürzt, damit das Schild aus einem Guss ist. Ab Werk ist der Schalter aus.
+hilft nur weniger Text. Deshalb steht unter _Preis_ zur Wahl, wie ein glatter
+Betrag geschrieben wird:
+
+| Schreibweise | Beispiel | Preisgröße auf dem 16er-Bogen |
+| ------------ | -------- | ----------------------------- |
+| nicht kürzen | 139,00 € | 42 px                         |
+| lang         | 139,– €  | 50 px                         |
+| kurz         | 139 €    | 66,5 px                       |
+
+Jede Stufe ist kürzer als die vorige, und kürzer heißt größer, solange die
+Breite die Bremse ist — vom ausgeschriebenen Betrag zur kurzen Form sind das
+gut 58 %. Preise mit echten Cent bleiben unangetastet, _249,50 €_ bleibt
+_249,50 €_, und die Aufschlüsselung darunter wird mitgekürzt, damit das Schild
+aus einem Guss ist. Ab Werk wird nicht gekürzt.
 
 Die Zusätze teilen sich eine Größe, damit die Liste ruhig aussieht. Eine lange
 Beschreibung wie „Komplettset (Stern + Außenbeleuchtung)" bricht dafür in eine

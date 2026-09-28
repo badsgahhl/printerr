@@ -112,8 +112,9 @@ resolve before the label face was ever requested.
 The label font (Source Serif 4) is embedded in `src/assets/fonts/` rather than linked, so every machine gets the same
 metrics and therefore the same fitted sizes.
 
-`PriceFormat` (`lib/price.ts`) decides how a price is written -- `shortenWholePrices` prints 139,– € for a price with
-no cents. It has to reach `computePriceView` in both the label and auto-fit, or a price would be measured as one
+`PriceFormat` (`lib/price.ts`) decides how a price is written -- `wholeEuros` is `'cents'`, `'dash'` or `'plain'`
+and prints 139,00 €, 139,– € or 139 € for a price whose cents are zero; the shorter the notation, the larger the
+fitting pass can set the price on a label limited by its width. It has to reach `computePriceView` in both the label and auto-fit, or a price would be measured as one
 string and printed as another. `settings.priceFormat()` is what everything showing "what the label prints" passes on,
 including the picker list and the live preview in the product form.
 

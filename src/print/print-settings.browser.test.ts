@@ -84,32 +84,56 @@ describe('where the price stands', () => {
 })
 
 describe('a price with no cents', () => {
-  it('is written with a dash and set larger for it', async () => {
+  it.each([
+    ['dash', /^139,–/u],
+    ['plain', /^139 |^139\u00a0|^139\u202f/u]
+  ] as const)('is written short as %s, and set larger for it', async (wholeEuros, written) => {
     const label = example('whole-price')
     // With the slider at its default the price is already as large as the
     // setting allows, and there is nothing for the shorter text to win. Turned
-    // up, the width is what limits it -- which is what the dash buys back.
+    // up, the width is what limits it -- which is what the shorter notation
+    // buys back.
     const style = styled({ priceMaxPx: 220 })
     const [withCents, shortened] = await Promise.all([
       fitsFor([label], { style }),
-      fitsFor([label], { style, priceFormat: { shortenWholePrices: true } })
+      fitsFor([label], { style, priceFormat: { wholeEuros } })
     ])
 
-    // Three characters fewer is room the fitting pass gives straight back.
+    // Characters fewer are room the fitting pass gives straight back.
     expect(shortened.get(label.id)!.sizes.price!).toBeGreaterThan(withCents.get(label.id)!.sizes.price! * 1.1)
 
     const { locator, screen } = await renderLabel(label, {
       style: styled({ columns: 4, rows: 4, priceMaxPx: 220 }),
-      priceFormat: { shortenWholePrices: true }
+      priceFormat: { wholeEuros }
     })
-    expect(screen.container.querySelector('.label__price-main')!.textContent).toMatch(/^139,–/u)
+    expect(screen.container.querySelector('.label__price-main')!.textContent).toMatch(written)
 
     await printMedia()
-    await expect.element(locator).toMatchScreenshot('price-shortened')
+    await expect.element(locator).toMatchScreenshot(`price-${wholeEuros}`)
+  })
+
+  it('gets larger with every step of the notation', async () => {
+    // What the setting is for: each notation is shorter than the one before,
+    // and on a label that is limited by its width shorter means larger.
+    const label = example('whole-price')
+    const style = styled({ columns: 4, rows: 4, priceMaxPx: 220 })
+    const sizes = await Promise.all(
+      (['cents', 'dash', 'plain'] as const).map(
+        async (wholeEuros) =>
+          (await fitsFor([label], { style, priceFormat: { wholeEuros } })).get(label.id)!.sizes.price!
+      )
+    )
+
+    expect(sizes[0]).toBeLessThan(sizes[1]!)
+    expect(sizes[1]).toBeLessThan(sizes[2]!)
+    // Written down, because "larger" is worth knowing by how much.
+    expect(
+      Object.fromEntries((['cents', 'dash', 'plain'] as const).map((key, index) => [key, sizes[index]]))
+    ).toMatchSnapshot('price size per notation, 16 to a sheet')
   })
 
   it('shortens the breakdown with the big price, so the label reads as one', async () => {
-    const { screen } = await renderLabel(example('exhibition'), { priceFormat: { shortenWholePrices: true } })
+    const { screen } = await renderLabel(example('exhibition'), { priceFormat: { wholeEuros: 'dash' } })
 
     expect(screen.container.querySelector('.label__price-main')!.textContent).toMatch(/^1\.148,–/u)
     expect([...screen.container.querySelectorAll('.label__row-amount')].map((cell) => cell.textContent)).toEqual([
@@ -123,7 +147,7 @@ describe('a price with no cents', () => {
     // The exhibition sum of 249,50 + 49,90 + 19,90 is not a whole number of
     // euros, so nothing about it is shortened.
     const { screen } = await renderLabel(example('breakdown-long'), {
-      priceFormat: { shortenWholePrices: true }
+      priceFormat: { wholeEuros: 'plain' }
     })
 
     expect(screen.container.querySelector('.label__price-main')!.textContent).toMatch(/^319,30/u)

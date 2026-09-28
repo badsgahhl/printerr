@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`a price with no cents > gets larger with every step of the notation > price size per notation, 16 to a sheet 1`] = `
+{
+  "cents": 42,
+  "dash": 50,
+  "plain": 66.5,
+}
+`;

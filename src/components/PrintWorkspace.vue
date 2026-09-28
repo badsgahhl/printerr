@@ -35,15 +35,22 @@
         @reset="settings.resetStyle"
       />
 
-      <fieldset class="flex flex-col gap-2 text-sm">
+      <fieldset class="flex flex-col gap-1.5 text-sm">
         <legend class="text-sm font-medium">Preis</legend>
-        <label class="flex items-center gap-2">
-          <Checkbox :model-value="settings.state.shortenWholePrices" @update:model-value="setShortenWholePrices" />
-          <span>
-            Glatte Preise kürzen: <span class="tabular-nums">139,– €</span> statt
-            <span class="tabular-nums">139,00 €</span>
-          </span>
-        </label>
+        <label class="text-muted-foreground text-xs" for="whole-euros">Glatte Preise schreiben als</label>
+        <select
+          id="whole-euros"
+          v-model="settings.state.wholeEuros"
+          class="border-input h-9 rounded-md border bg-transparent px-3 text-sm tabular-nums"
+        >
+          <option value="cents">139,00 € — nicht kürzen</option>
+          <option value="dash">139,– € — lang</option>
+          <option value="plain">139 € — kurz</option>
+        </select>
+        <p class="text-muted-foreground text-xs">
+          Gilt nur, wo der Preis glatt aufgeht; 249,50 € bleibt 249,50 €. Je kürzer, desto größer kann die Automatik den
+          Preis setzen.
+        </p>
       </fieldset>
 
       <fieldset class="flex flex-col gap-2 text-sm">
@@ -142,8 +149,6 @@ const selectedLabels = computed(() => props.labels.filter((label) => selection.i
 
 const setBrandEnabled = (value: boolean | 'indeterminate') => void (settings.state.brandEnabled = value === true)
 const setShowRuler = (value: boolean | 'indeterminate') => void (settings.state.showRuler = value === true)
-const setShortenWholePrices = (value: boolean | 'indeterminate') =>
-  void (settings.state.shortenWholePrices = value === true)
 
 /**
  * Keep the rendered labels measured at all times.
