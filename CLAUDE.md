@@ -18,8 +18,10 @@ Node version is in `.nvmrc` (24); the package manager is pnpm.
 
 ```sh
 pnpm dev                              # http://localhost:4300
-pnpm test:unit                        # Vitest in watch mode
+pnpm test:unit                        # Vitest in watch mode (jsdom)
 pnpm test:unit run                    # single run (what CI does)
+pnpm test:browser                     # the Chromium suite: real measuring, screenshots
+pnpm test:browser:update              # re-take the reference screenshots and snapshots
 pnpm test:unit run src/lib/price.test.ts        # one file
 pnpm test:unit run -t "part of a test name"     # one test
 pnpm type-check                       # vue-tsc --build
@@ -110,8 +112,9 @@ resolve before the label face was ever requested.
 The label font (Source Serif 4) is embedded in `src/assets/fonts/` rather than linked, so every machine gets the same
 metrics and therefore the same fitted sizes.
 
-`PriceFormat` (`lib/price.ts`) decides how a price is written -- `shortenWholePrices` prints 139,– € for a price with
-no cents. It has to reach `computePriceView` in both the label and auto-fit, or a price would be measured as one
+`PriceFormat` (`lib/price.ts`) decides how a price is written -- `wholeEuros` is `'cents'`, `'dash'` or `'plain'`
+and prints 139,00 €, 139,– € or 139 € for a price whose cents are zero; the shorter the notation, the larger the
+fitting pass can set the price on a label limited by its width. It has to reach `computePriceView` in both the label and auto-fit, or a price would be measured as one
 string and printed as another. `settings.priceFormat()` is what everything showing "what the label prints" passes on,
 including the picker list and the live preview in the product form.
 
@@ -149,6 +152,19 @@ The README section "Dinge, die nicht offensichtlich sind" gives the full reasoni
   to end.
 
 ## Tests
+
+Two suites, two configs. `vitest.config.ts` is jsdom and is what CI runs; `vitest.browser.config.ts` is Chromium
+through `@vitest/browser-playwright` and matches `src/**/*.browser.test.ts`, which the jsdom config excludes.
+
+The browser suite exists for the one thing jsdom cannot do: measure. It renders the real components, runs the real
+`createDomMeasurer` and `createAutoFit`, and records both the fitted sizes (`__snapshots__/`) and a screenshot
+(`__screenshots__/`, committed) for every example in `src/test/browser/examples.ts`. `src/test/browser/harness.ts`
+holds the rendering helpers; `emulateMedia` is a browser command declared in the config, because only the driver can
+put a page into print media -- and print media is what the screenshots are taken in.
+
+Screenshots depend on the font rasterisation of the machine that takes them, so this suite is deliberately not wired
+into CI; a runner with a different font stack would report differences that are not differences. Re-take references
+with `pnpm test:browser:update` and read the image diff in the pull request.
 
 Vitest runs with jsdom and without `globals`. `src/test/setup.ts` registers Testing Library's `cleanup` and stubs the
 browser APIs that reka-ui needs, such as `matchMedia` and `ResizeObserver`. The Vitest config leaves out the Tailwind

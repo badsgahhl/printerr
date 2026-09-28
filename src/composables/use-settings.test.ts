@@ -32,15 +32,31 @@ describe('how prices are written', () => {
   it('keeps the cents until the shop says otherwise', () => {
     const settings = fresh()
 
-    expect(settings.state.shortenWholePrices).toBe(false)
-    expect(settings.priceFormat()).toEqual({ shortenWholePrices: false })
+    expect(settings.state.wholeEuros).toBe('cents')
+    expect(settings.priceFormat()).toEqual({ wholeEuros: 'cents' })
   })
 
-  it('hands the print path what the shop chose', () => {
+  it.each(['dash', 'plain'] as const)('hands the print path the %s notation', (wholeEuros) => {
     const settings = fresh()
-    settings.state.shortenWholePrices = true
+    settings.state.wholeEuros = wholeEuros
 
-    expect(settings.priceFormat()).toEqual({ shortenWholePrices: true })
+    expect(settings.priceFormat()).toEqual({ wholeEuros })
+  })
+
+  it('carries the old yes-or-no switch over to the dash', () => {
+    // Whoever had ticked "kürzen" wanted 139,– €; that is where they land.
+    const backing = memoryStorage()
+    backing.setItem('printerr:v1:settings', JSON.stringify({ shortenWholePrices: true }))
+
+    expect(fresh(backing).state.wholeEuros).toBe('dash')
+  })
+
+  it('ignores a notation it does not know', () => {
+    // Storage outlives app versions and is shared with every other local page.
+    const backing = memoryStorage()
+    backing.setItem('printerr:v1:settings', JSON.stringify({ wholeEuros: 'in Talern' }))
+
+    expect(fresh(backing).state.wholeEuros).toBe('cents')
   })
 })
 
@@ -157,14 +173,14 @@ describe('label style settings', () => {
     first.setStyle('nameMaxPx', 40)
     first.state.brandEnabled = true
     first.state.brandText = 'Krawtschenko GmbH'
-    first.state.shortenWholePrices = true
+    first.state.wholeEuros = 'plain'
 
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     const second = fresh(backing)
     expect(second.state.labelStyle.nameMaxPx).toBe(40)
     expect(second.brand()).toBe('Krawtschenko GmbH')
-    expect(second.priceFormat()).toEqual({ shortenWholePrices: true })
+    expect(second.priceFormat()).toEqual({ wholeEuros: 'plain' })
   })
 })
 

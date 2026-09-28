@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 
 import { createSafeStorage, type SafeStorage } from '@/infra/safe-storage'
-import type { PriceFormat } from '@/lib/price'
+import { isWholeEuroStyle, type PriceFormat, type WholeEuroStyle } from '@/lib/price'
 import { DEFAULT_LABEL_STYLE, type FontSizeKey, type LabelStyle, type SheetGrid, STYLE_LIMITS } from '@/print/geometry'
 
 export interface Settings {
@@ -10,8 +10,8 @@ export interface Settings {
   brandEnabled: boolean
   /** Prints a 100mm bar on the first sheet, to check the print dialog's scaling. */
   showRuler: boolean
-  /** Writes a price with no cents as 139,– € instead of 139,00 €. */
-  shortenWholePrices: boolean
+  /** How a price with no cents is written: 139,00 €, 139,– € or 139 €. */
+  wholeEuros: WholeEuroStyle
   /** Sizes and margin; every size is an upper bound, not a fixed value. */
   labelStyle: LabelStyle
 }
@@ -20,13 +20,23 @@ const DEFAULTS: Settings = {
   brandText: '',
   brandEnabled: false,
   showRuler: false,
-  shortenWholePrices: false,
+  wholeEuros: 'cents',
   labelStyle: DEFAULT_LABEL_STYLE
 }
 
 const STYLE_KEYS = Object.keys(DEFAULT_LABEL_STYLE) as (keyof LabelStyle)[]
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
+
+/**
+ * Settings written when the shortening was a yes-or-no switch.
+ *
+ * Whoever had ticked it wanted the dash; anything else means the cents.
+ */
+function wholeEurosFrom(stored: Partial<Settings> & { shortenWholePrices?: unknown }): WholeEuroStyle {
+  if (isWholeEuroStyle(stored.wholeEuros)) return stored.wholeEuros
+  return stored.shortenWholePrices === true ? 'dash' : DEFAULTS.wholeEuros
+}
 
 /** Settings written before every text had a size of its own. */
 interface LegacyStyle {
@@ -107,6 +117,9 @@ export function createSettings(deps: { storage?: SafeStorage } = {}) {
   const state = reactive<Settings>({
     ...DEFAULTS,
     ...stored,
+    // Both of these are read back from storage, which outlives app versions
+    // and is shared with every other page of a file:// origin.
+    wholeEuros: wholeEurosFrom(stored),
     labelStyle: normalizeStyle(stored.labelStyle)
   })
 
@@ -120,7 +133,7 @@ export function createSettings(deps: { storage?: SafeStorage } = {}) {
    * longer needs.
    */
   function priceFormat(): PriceFormat {
-    return { shortenWholePrices: state.shortenWholePrices }
+    return { wholeEuros: state.wholeEuros }
   }
 
   /** What PriceLabel should print, or null to leave the foot empty. */

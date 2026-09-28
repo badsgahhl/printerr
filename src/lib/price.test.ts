@@ -8,7 +8,8 @@ import type { Label, LabelExtra } from '@/lib/types'
 // the next Node upgrade; the print output wants the real no-break space, so
 // only the assertions normalise, never the code under test.
 const euro = (cents: number): string => formatCents(cents).replaceAll(/\s/gu, ' ')
-const shortEuro = (cents: number): string => formatCents(cents, { shortenWholePrices: true }).replaceAll(/\s/gu, ' ')
+const dashEuro = (cents: number): string => formatCents(cents, { wholeEuros: 'dash' }).replaceAll(/\s/gu, ' ')
+const shortEuro = (cents: number): string => formatCents(cents, { wholeEuros: 'plain' }).replaceAll(/\s/gu, ' ')
 const plain = (text: string): string => text.replaceAll(/\s/gu, ' ')
 
 const extra = (over: Partial<LabelExtra> = {}): LabelExtra => ({
@@ -51,14 +52,28 @@ describe('formatCents', () => {
   it('writes a price with no cents as the shop window does, when asked', () => {
     // The dash for two zeros: three characters shorter, which is what lets the
     // price be set larger on a small tag.
-    expect(shortEuro(13_900)).toBe('139,– €')
-    expect(shortEuro(114_800)).toBe('1.148,– €')
-    expect(shortEuro(0)).toBe('0,– €')
+    expect(dashEuro(13_900)).toBe('139,– €')
+    expect(dashEuro(114_800)).toBe('1.148,– €')
+    expect(dashEuro(0)).toBe('0,– €')
   })
 
-  it('leaves a price with cents alone, shortened or not', () => {
+  it('drops the cents entirely for the shortest notation', () => {
+    // Two characters shorter again, comma and all -- and still the grouping
+    // dot and the no-break space Intl puts before the sign.
+    expect(shortEuro(13_900)).toBe('139 €')
+    expect(shortEuro(114_800)).toBe('1.148 €')
+    expect(shortEuro(0)).toBe('0 €')
+  })
+
+  it('leaves a price with cents alone, whichever notation is chosen', () => {
+    expect(dashEuro(13_950)).toBe('139,50 €')
     expect(shortEuro(13_950)).toBe('139,50 €')
     expect(shortEuro(7)).toBe('0,07 €')
+  })
+
+  it('gets shorter with every step', () => {
+    expect(shortEuro(114_800).length).toBeLessThan(dashEuro(114_800).length)
+    expect(dashEuro(114_800).length).toBeLessThan(euro(114_800).length)
   })
 
   it('writes the cents unless the shop asks otherwise', () => {
@@ -164,19 +179,22 @@ describe('computePriceView', () => {
 })
 
 describe('the shortened price on a whole label', () => {
-  it('reaches the big price and the breakdown alike', () => {
+  it.each([
+    ['dash', '1.148,– €', ['890,– €', '258,– €']],
+    ['plain', '1.148 €', ['890 €', '258 €']]
+  ] as const)('reaches the big price and the breakdown alike, as %s', (wholeEuros, mainText, amounts) => {
     const view = computePriceView(
       label({ priceCents: 89_000, extras: [extra({ priceCents: 25_800, exhibited: true })] }),
-      { shortenWholePrices: true }
+      { wholeEuros }
     )
 
-    expect(plain(view.mainText)).toBe('1.148,– €')
-    expect(view.breakdown.map((row) => plain(row.amountText))).toEqual(['890,– €', '258,– €'])
+    expect(plain(view.mainText)).toBe(mainText)
+    expect(view.breakdown.map((row) => plain(row.amountText))).toEqual(amounts)
   })
 
   it('leaves free text alone', () => {
     const view = computePriceView(label({ extras: [extra({ priceCents: null, priceText: 'ab 90,00 €' })] }), {
-      shortenWholePrices: true
+      wholeEuros: 'plain'
     })
 
     expect(view.breakdown[0]?.amountText).toBe('ab 90,00 €')

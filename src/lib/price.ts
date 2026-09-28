@@ -10,32 +10,45 @@ import type { Label, LabelExtra } from '@/lib/types'
 // Building an Intl formatter is expensive, so it happens once.
 const EURO = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 
+/**
+ * How a price whose cents are zero is written.
+ *
+ * Each step is shorter than the one before, and on a small label shorter is
+ * what lets the price be set larger: 139,00 € fills the line where 139 € still
+ * has room to grow. 'dash' is the shop-window notation, 'plain' drops the cents
+ * altogether. A price with real cents is never touched by any of them.
+ */
+export type WholeEuroStyle = 'cents' | 'dash' | 'plain'
+
+export const WHOLE_EURO_STYLES: readonly WholeEuroStyle[] = ['cents', 'dash', 'plain']
+
+export const isWholeEuroStyle = (value: unknown): value is WholeEuroStyle =>
+  typeof value === 'string' && (WHOLE_EURO_STYLES as readonly string[]).includes(value)
+
 /** How prices are written, where the shop has a say in it. */
 export interface PriceFormat {
-  /**
-   * Writes a price with no cents the way a shop window writes it: 139,– € for
-   * 139,00 €. Three characters shorter, which on a small label is the
-   * difference between a price that fills the width and one that can be set
-   * larger. Off unless the shop asks for it.
-   */
-  readonly shortenWholePrices?: boolean
+  /** Defaults to 'cents', which is the notation nobody has to think about. */
+  readonly wholeEuros?: WholeEuroStyle
 }
 
 /**
- * The dash that stands in for two zero cents.
+ * A price with no cents, written short.
  *
  * Built from the same formatter rather than by string surgery, so the grouping
  * dot and the narrow space before the euro sign stay exactly as Intl writes
- * them -- only the two zeros are replaced.
+ * them; only the two zeros are replaced or dropped, and the comma goes with
+ * them when they do.
  */
-function wholeEuroText(cents: number): string {
+function wholeEuroText(cents: number, style: 'dash' | 'plain'): string {
   return EURO.formatToParts(cents / 100)
+    .filter((part) => style === 'dash' || (part.type !== 'decimal' && part.type !== 'fraction'))
     .map((part) => (part.type === 'fraction' ? '–' : part.value))
     .join('')
 }
 
 export function formatCents(cents: number, format: PriceFormat = {}): string {
-  if (format.shortenWholePrices === true && cents % 100 === 0) return wholeEuroText(cents)
+  const style = format.wholeEuros ?? 'cents'
+  if (style !== 'cents' && cents % 100 === 0) return wholeEuroText(cents, style)
   return EURO.format(cents / 100)
 }
 
