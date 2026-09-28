@@ -42,6 +42,12 @@ const slotCount = computed(() => grid.value.columns * grid.value.rows)
 const labelWidth = computed(() => labelWidthMm(style.value))
 const labelHeight = computed(() => labelHeightMm(style.value))
 
-/** Keep the whole picker a constant size, so the sidebar does not jump about. */
-const gridWidthRem = computed(() => Math.min(9, 3 + grid.value.columns * 1.5))
+/**
+ * Keep the picker bounded, so the sidebar does not jump about.
+ *
+ * The ceiling follows the widest grid rather than the old fixed nine rem: at
+ * eight columns that left a slot 14 pixels wide, too narrow for a two-digit
+ * number and far too narrow for a finger.
+ */
+const gridWidthRem = computed(() => Math.min(15, 3 + grid.value.columns * 1.5))
 </script>
