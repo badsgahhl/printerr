@@ -92,6 +92,11 @@ scaled to whatever grid is chosen:
 - vertical measurements scale with the label height;
 - type scales with the smaller of the two.
 
+The one exception is `punchMm`, the strip kept clear at the top for a ribbon hole: it is real millimetres and does
+not scale, because a punch makes the same hole on every tag. `punchHeightMm` caps it at `MAX_PUNCH_SHARE` of the
+label height so it cannot eat a small format, and the settings panel says when the cap bites. `pricePosPct` moves
+the price inside the room it already has (two `flex-grow` spacers in `label.css`), so it never changes a size.
+
 Grids always divide A4 exactly. The number of slots per sheet comes from `slotsPerSheet(style)`. The
 `SLOTS_PER_SHEET = 4` in `paginate.ts` is only a fallback default.
 

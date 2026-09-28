@@ -3,7 +3,7 @@
     <section class="rounded-lg border">
       <header class="flex items-center justify-between px-3 py-2">
         <button type="button" class="flex-1 text-left text-sm font-medium" @click="sheetExpanded = !sheetExpanded">
-          Bogen &amp; Schildgröße
+          Bogen &amp; Schild
           <span class="text-muted-foreground font-normal">{{ sheetExpanded ? '▾' : '▸' }}</span>
         </button>
         <span class="text-muted-foreground mr-2 text-xs tabular-nums">{{ formatSummary }}</span>
@@ -74,6 +74,33 @@
           @change="(value) => $emit('change', 'paddingMm', value)"
           @reset="$emit('reset', ['paddingMm'])"
         />
+
+        <div class="flex flex-col gap-1.5">
+          <StyleSlider
+            label="Loch oben fürs Bändchen"
+            :value="labelStyle.punchMm"
+            :limits="STYLE_LIMITS.punchMm"
+            :display="punchDisplay"
+            :is-default="isDefault(['punchMm'])"
+            @change="(value) => $emit('change', 'punchMm', value)"
+            @reset="$emit('reset', ['punchMm'])"
+          />
+
+          <p v-if="punchCapped" class="text-xs text-amber-700">
+            Auf diesem Format bleiben davon {{ round(effectivePunch) }} mm: mehr als ein Drittel der Schildhöhe würde
+            den Preis verdrängen.
+          </p>
+        </div>
+
+        <StyleSlider
+          label="Preis steht"
+          :value="labelStyle.pricePosPct"
+          :limits="STYLE_LIMITS.pricePosPct"
+          :display="pricePosDisplay"
+          :is-default="isDefault(['pricePosPct'])"
+          @change="(value) => $emit('change', 'pricePosPct', value)"
+          @reset="$emit('reset', ['pricePosPct'])"
+        />
       </div>
     </section>
 
@@ -129,6 +156,7 @@ import {
   labelHeightMm,
   labelWidthMm,
   paddingMm,
+  punchHeightMm,
   pxToMm,
   SAFE_PADDING_MM,
   type SheetGrid,
@@ -157,7 +185,7 @@ const SIZE_SLIDERS: readonly SizeSlider[] = [
 ]
 
 const SIZE_KEYS: readonly (keyof LabelStyle)[] = SIZE_SLIDERS.map((slider) => slider.key)
-const SHEET_KEYS: readonly (keyof LabelStyle)[] = ['columns', 'rows', 'paddingMm']
+const SHEET_KEYS: readonly (keyof LabelStyle)[] = ['columns', 'rows', 'paddingMm', 'punchMm', 'pricePosPct']
 
 const props = defineProps<{
   labelStyle: LabelStyle
@@ -187,6 +215,17 @@ const formatSummary = computed(() => `${grid.value.columns * grid.value.rows} ·
 
 const effectivePadding = computed(() => paddingMm(props.labelStyle))
 const marginTooTight = computed(() => effectivePadding.value < SAFE_PADDING_MM)
+
+// A hole is the same hole on every tag, so the strip does not scale with the
+// label -- which means a small format cannot always grant what was asked for.
+const effectivePunch = computed(() => punchHeightMm(props.labelStyle))
+const punchCapped = computed(() => props.labelStyle.punchMm - effectivePunch.value > 0.01)
+const punchDisplay = computed(() => (effectivePunch.value === 0 ? 'aus' : `${round(effectivePunch.value)} mm`))
+
+const PRICE_POS_WORDS: Readonly<Record<number, string>> = { 0: 'oben', 50: 'mittig', 100: 'unten' }
+const pricePosDisplay = computed(
+  () => PRICE_POS_WORDS[props.labelStyle.pricePosPct] ?? `${round(props.labelStyle.pricePosPct)} %`
+)
 
 const isActive = (candidate: SheetGrid): boolean =>
   candidate.columns === grid.value.columns && candidate.rows === grid.value.rows

@@ -11,6 +11,7 @@ function renderSettings(labelStyle: LabelStyle = DEFAULT_LABEL_STYLE) {
 }
 
 const openSizes = () => fireEvent.click(screen.getByRole('button', { name: /Schriftgrößen/u }))
+const openSheet = () => fireEvent.click(screen.getByRole('button', { name: /Bogen & Schild/u }))
 
 describe('StyleSettings', () => {
   it('offers a size for every text on the label, named as in the product form', async () => {
@@ -59,6 +60,31 @@ describe('StyleSettings', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Hinweis am Fuß auf Standard' }))
 
     expect(emitted('reset')).toEqual([[['noteMaxPx']]])
+  })
+
+  it('keeps the hole and the price position with the sheet, not with the sizes', async () => {
+    renderSettings()
+    await openSheet()
+
+    expect(screen.getByLabelText('Loch oben fürs Bändchen')).toHaveAttribute('type', 'range')
+    expect(screen.getByLabelText('Preis steht')).toHaveAttribute('type', 'range')
+  })
+
+  it('says how much of the hole a small label can actually grant', async () => {
+    // Twenty millimetres of a sixty-fourth of A4 would be more than half the
+    // tag, so the strip is capped at a third -- and says so rather than quietly
+    // taking less than was asked for.
+    renderSettings({ ...DEFAULT_LABEL_STYLE, columns: 8, rows: 8, punchMm: 20 })
+    await openSheet()
+
+    expect(screen.getByText(/bleiben davon 12,4 mm/u)).toBeInTheDocument()
+  })
+
+  it('says nothing about the hole when the label can grant it', async () => {
+    renderSettings({ ...DEFAULT_LABEL_STYLE, punchMm: 10 })
+    await openSheet()
+
+    expect(screen.queryByText(/bleiben davon/u)).not.toBeInTheDocument()
   })
 
   it('resets the sizes and the sheet separately', async () => {
