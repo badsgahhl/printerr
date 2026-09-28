@@ -107,18 +107,23 @@ export const GRID_PRESETS: readonly { grid: SheetGrid; label: string; note: stri
   { grid: { columns: 2, rows: 4 }, label: '8 pro Bogen', note: 'A7 quer' },
   { grid: { columns: 3, rows: 3 }, label: '9 pro Bogen', note: '70 × 99 mm' },
   { grid: { columns: 3, rows: 4 }, label: '12 pro Bogen', note: '70 × 74 mm' },
-  { grid: { columns: 4, rows: 4 }, label: '16 pro Bogen', note: 'A8 hoch' }
+  { grid: { columns: 4, rows: 4 }, label: '16 pro Bogen', note: 'A8 hoch' },
+  { grid: { columns: 4, rows: 8 }, label: '32 pro Bogen', note: 'A9 quer' },
+  { grid: { columns: 8, rows: 8 }, label: '64 pro Bogen', note: 'A10 hoch' }
 ]
 
 /**
  * What the settings may offer.
  *
- * The grid stops at 6 columns and rows: below roughly 35mm a label cannot carry
- * a readable price, let alone a name.
+ * The grid stops at 8 columns and rows, which is 26 x 37mm a label -- a quarter
+ * of the 16-per-sheet format, and about as small as a price tag gets. The
+ * fitting pass keeps such a label from overflowing, but nothing can make 26mm
+ * hold what 52mm held: "1.148,00 €" comes out at around 4mm there, and the
+ * small print below a millimetre.
  */
 export const STYLE_LIMITS = {
-  columns: { min: 1, max: 6, step: 1 },
-  rows: { min: 1, max: 6, step: 1 },
+  columns: { min: 1, max: 8, step: 1 },
+  rows: { min: 1, max: 8, step: 1 },
   paddingMm: { min: 2, max: 16, step: 0.5 },
   nameMaxPx: { min: 16, max: 52, step: 1 },
   subtitleMaxPx: { min: 8, max: 30, step: 0.5 },

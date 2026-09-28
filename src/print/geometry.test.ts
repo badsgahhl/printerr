@@ -99,10 +99,32 @@ describe('dividing the sheet', () => {
     expect(gridOf(styled({ columns: 2.7, rows: 3.2 }))).toEqual({ columns: 2, rows: 3 })
   })
 
+  it('offers every format again as a quarter of itself, down to 64 a sheet', () => {
+    // What the shop asked for: the 16-per-sheet label, quartered. Halving both
+    // axes is what makes it a quarter rather than merely smaller.
+    const sixteen = styled({ columns: 4, rows: 4 })
+    const sixtyFour = styled({ columns: 8, rows: 8 })
+
+    expect(GRID_PRESETS.map(({ grid }) => grid.columns * grid.rows)).toContain(64)
+    expect(labelWidthMm(sixtyFour) * 2).toBeCloseTo(labelWidthMm(sixteen), 10)
+    expect(labelHeightMm(sixtyFour) * 2).toBeCloseTo(labelHeightMm(sixteen), 10)
+    expect(slotsPerSheet(sixtyFour)).toBe(4 * slotsPerSheet(sixteen))
+  })
+
   it('offers only presets that divide the sheet without waste', () => {
-    const wasteful = GRID_PRESETS.filter(({ grid }) => SHEET_WIDTH_MM % grid.columns !== 0 && grid.columns !== 4)
-    // 4 columns gives 52.5mm, which is exact in decimal even though the modulo is not.
-    expect(wasteful.map((preset) => preset.label)).toEqual([])
+    // Measured on what the stylesheet is handed, not on what the geometry
+    // computes: those millimetres are rounded to three decimals, and a division
+    // that does not survive the rounding -- seven rows, say -- drifts every cut
+    // line below it. 52.5 and 26.25 do survive it, whatever the modulo says.
+    const drifting = GRID_PRESETS.filter(({ grid }) => {
+      const vars = sheetCssVars(styled(grid))
+      return (
+        Number.parseFloat(vars['--label-w']) * grid.columns !== SHEET_WIDTH_MM ||
+        Number.parseFloat(vars['--label-h']) * grid.rows !== SHEET_HEIGHT_MM
+      )
+    })
+
+    expect(drifting.map((preset) => preset.label)).toEqual([])
     expect(GRID_PRESETS.every(({ grid }) => grid.columns >= 1 && grid.rows >= 1)).toBe(true)
   })
 
@@ -399,7 +421,7 @@ describe('label boxes follow the grid', () => {
   it('keeps the margin printable even on the smallest label', () => {
     // A margin that scales without a floor would let a tiny label put text where
     // the printer cannot reach.
-    const tiny = styled({ columns: 6, rows: 6 })
+    const tiny = styled({ columns: STYLE_LIMITS.columns.max, rows: STYLE_LIMITS.rows.max })
 
     expect(paddingMm(tiny)).toBeGreaterThanOrEqual(STYLE_LIMITS.paddingMm.min)
     expect(contentWidthMm(tiny)).toBeGreaterThan(0)

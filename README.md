@@ -7,8 +7,9 @@ drucken.
 **→ <https://badsgahhl.github.io/printerr/>**
 
 Wie viele Schilder auf einen A4-Bogen kommen, ist einstellbar — von einem
-(ganzes A4) bis sechzehn (A8). Voreingestellt sind vier, also ein Viertel-A4 pro
-Schild (**105 × 148,5 mm**, hoch). Die Schnittlinien werden mitgedruckt.
+(ganzes A4) bis vierundsechzig (A10). Voreingestellt sind vier, also ein
+Viertel-A4 pro Schild (**105 × 148,5 mm**, hoch). Die Schnittlinien werden
+mitgedruckt.
 
 ## Der Sonderfall, um den es eigentlich geht
 
@@ -35,12 +36,17 @@ Oben wird zwischen **Drucken** und **Daten** umgeschaltet.
 **Drucken** ist die Auswahl mit der Bogenvorschau. `Cmd+P` liefert immer die
 Schilder, auch aus dem Daten-Bereich heraus.
 
-Unter **Bogen & Schildgröße** wird die Aufteilung gewählt: 1, 2, 4, 6, 8, 9, 12
-oder 16 pro Bogen, oder frei als Spalten × Zeilen. Jede Aufteilung teilt A4 ohne
-Rest, damit die Schnittlinien nicht wandern. Die Typografie skaliert mit — die
-Größenregler gelten für ein Viertel-A4 und werden auf das gewählte Format
-umgerechnet, sodass ein Wechsel das Design behält statt die Schrift zu
-zertrümmern.
+Unter **Bogen & Schildgröße** wird die Aufteilung gewählt: 1, 2, 4, 6, 8, 9, 12,
+16, 32 oder 64 pro Bogen, oder frei als Spalten × Zeilen. Jede Aufteilung teilt
+A4 ohne Rest, damit die Schnittlinien nicht wandern. Die Reihe halbiert sich der
+Länge nach weiter: 64 pro Bogen ist das 16er-Schild noch einmal geviertelt,
+26,25 × 37,125 mm. Viel kleiner geht nicht — dort setzt die Automatik einen
+Preis wie 1.148,00 € noch gut vier Millimeter groß und den Produktnamen zwei,
+während Untertitel, Artikelnummer und Ladenname unter einen Millimeter geraten.
+
+Die Typografie skaliert mit — die Größenregler gelten für ein Viertel-A4 und
+werden auf das gewählte Format umgerechnet, sodass ein Wechsel das Design behält
+statt die Schrift zu zertrümmern.
 
 Unter **Schriftgrößen** hat jeder Text des Schilds einen eigenen Regler, von oben
 nach unten: Produktname, Untertitel, Artikelnummer, Preis, Preiszusatz, Zusätze,
