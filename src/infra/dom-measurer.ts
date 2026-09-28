@@ -27,6 +27,17 @@ const CLASS_FOR_STYLE: Readonly<Record<StyleKey, string>> = {
 
 export interface DomMeasurer {
   readonly measure: TextMeasurer
+  /**
+   * Whether the sandbox is rendered at all, and its readings therefore worth
+   * having.
+   *
+   * Print hides it -- a `position: fixed` element would otherwise repeat on
+   * every page -- and a hidden element measures every text as nothing at all.
+   * Nothing is the one answer the fitting search must never be given: to it,
+   * a text of no width fits anywhere, so it would hand back the largest size
+   * on the slider and overflow the label.
+   */
+  usable(): boolean
   dispose(): void
 }
 
@@ -102,6 +113,7 @@ export function createDomMeasurer(doc: Document = document): DomMeasurer {
 
   return {
     measure,
+    usable: () => host.isConnected && doc.defaultView?.getComputedStyle(host).display !== 'none',
     dispose: () => host.remove()
   }
 }

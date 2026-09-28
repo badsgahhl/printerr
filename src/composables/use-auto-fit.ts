@@ -10,7 +10,7 @@ import {
   type Measurement,
   type TextMeasurer
 } from '@/lib/fit-text'
-import { computePriceView } from '@/lib/price'
+import { computePriceView, type PriceFormat } from '@/lib/price'
 import type { Label } from '@/lib/types'
 import {
   BREAKDOWN_LINE_HEIGHT,
@@ -46,7 +46,11 @@ function longest(values: readonly string[]): string {
 
 const DESCRIPTION_LINES = { max: BREAKDOWN_MAX_LINES, lineHeight: BREAKDOWN_LINE_HEIGHT } as const
 
-export function createAutoFit(measure: TextMeasurer) {
+/**
+ * @param canMeasure Asked before each round: false keeps the sizes already
+ *   found instead of replacing them with what an unmeasurable sandbox reports.
+ */
+export function createAutoFit(measure: TextMeasurer, canMeasure: () => boolean = () => true) {
   const cache = new Map<string, FitResult>()
   const measurements = new Map<string, Measurement>()
   const fits = shallowRef<ReadonlyMap<string, LabelFit>>(new Map())
@@ -89,8 +93,13 @@ export function createAutoFit(measure: TextMeasurer) {
    * longest of them cannot hold the others small. Last the price, which gets
    * whatever height is left -- including what a shrunk text gave back.
    */
-  function measureLabel(label: Label, brand: string | null, style: LabelStyle): { fit: LabelFit; overflows: boolean } {
-    const view = computePriceView(label)
+  function measureLabel(
+    label: Label,
+    brand: string | null,
+    style: LabelStyle,
+    format: PriceFormat
+  ): { fit: LabelFit; overflows: boolean } {
+    const view = computePriceView(label, format)
     const ranges = fontRanges(style)
     const sizes: Partial<Record<StyleKey, number>> = {}
     let overflows = false
@@ -176,13 +185,20 @@ export function createAutoFit(measure: TextMeasurer) {
   function ensureMeasured(
     labels: readonly Label[],
     brand: string | null,
-    style: LabelStyle = DEFAULT_LABEL_STYLE
+    style: LabelStyle = DEFAULT_LABEL_STYLE,
+    format: PriceFormat = {}
   ): void {
+    // Measuring while the sandbox is hidden -- which is what print does to it --
+    // reports every text as zero wide, and zero fits anything: every label would
+    // be set at the largest size its slider allows and overflow. Keeping the
+    // last sizes that were measured for real is always the better answer.
+    if (!canMeasure()) return
+
     const nextFits = new Map<string, LabelFit>()
     const nextOverflowing = new Set<string>()
 
     for (const label of labels) {
-      const { fit, overflows } = measureLabel(label, brand, style)
+      const { fit, overflows } = measureLabel(label, brand, style, format)
       if (overflows) nextOverflowing.add(label.id)
       nextFits.set(label.id, fit)
     }

@@ -28,6 +28,22 @@ const LEGACY_KEYS = [
   'brandMaxPx'
 ] as const
 
+describe('how prices are written', () => {
+  it('keeps the cents until the shop says otherwise', () => {
+    const settings = fresh()
+
+    expect(settings.state.shortenWholePrices).toBe(false)
+    expect(settings.priceFormat()).toEqual({ shortenWholePrices: false })
+  })
+
+  it('hands the print path what the shop chose', () => {
+    const settings = fresh()
+    settings.state.shortenWholePrices = true
+
+    expect(settings.priceFormat()).toEqual({ shortenWholePrices: true })
+  })
+})
+
 describe('shop branding', () => {
   it('prints nothing until it is switched on and filled in', () => {
     const settings = fresh()
@@ -141,12 +157,14 @@ describe('label style settings', () => {
     first.setStyle('nameMaxPx', 40)
     first.state.brandEnabled = true
     first.state.brandText = 'Krawtschenko GmbH'
+    first.state.shortenWholePrices = true
 
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     const second = fresh(backing)
     expect(second.state.labelStyle.nameMaxPx).toBe(40)
     expect(second.brand()).toBe('Krawtschenko GmbH')
+    expect(second.priceFormat()).toEqual({ shortenWholePrices: true })
   })
 })
 

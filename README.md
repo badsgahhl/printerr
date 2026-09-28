@@ -77,6 +77,23 @@ Hinweis am Fuß, Ladenname. Jeder Wert ist eine Obergrenze. Passt ein Text nicht
 in die Breite, wird er kleiner gesetzt und beansprucht dann auch nur die Höhe,
 die er wirklich braucht; den Rest bekommt der Preis.
 
+## Wie groß der Preis wird
+
+Der Preis-Regler reicht bis 220 px (58 mm auf einem Viertel-A4), doppelt so weit
+wie vorher. Das ist keine Willkür, sondern gemessen: bei einem Schild wie
+_159,00 €_ war die alte Obergrenze auf jedem Raster, dessen Schild breiter als
+hoch ist, die eigentliche Bremse — auf einem Achtel-Bogen etwa blieb der Preis
+bei 55 px stehen, obwohl über und unter ihm zwei Drittel des Platzes leer waren.
+Mit der neuen Grenze sind daraus 93 px.
+
+Auf quadratischeren Formaten bremst dagegen die Breite, nicht der Regler: dort
+hilft nur weniger Text. Deshalb der Schalter **Glatte Preise kürzen** unter
+_Preis_: er schreibt _139,– €_ statt _139,00 €_, wie es im Schaufenster üblich
+ist. Drei Zeichen weniger sind auf dem Viertel-A4 rund 19 % mehr Schriftgröße,
+auf dem 16er-Bogen 18 %. Preise mit echten Cent bleiben unangetastet —
+_249,50 €_ bleibt _249,50 €_ —, und die Aufschlüsselung darunter wird
+mitgekürzt, damit das Schild aus einem Guss ist. Ab Werk ist der Schalter aus.
+
 Die Zusätze teilen sich eine Größe, damit die Liste ruhig aussieht. Eine lange
 Beschreibung wie „Komplettset (Stern + Außenbeleuchtung)" bricht dafür in eine
 zweite Zeile um, statt alle Zeilen klein zu halten, und die Spalten für

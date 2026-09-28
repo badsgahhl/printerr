@@ -151,7 +151,11 @@ export const STYLE_LIMITS = {
   nameMaxPx: { min: 16, max: 52, step: 1 },
   subtitleMaxPx: { min: 8, max: 30, step: 0.5 },
   artNrMaxPx: { min: 7, max: 24, step: 0.5 },
-  priceMaxPx: { min: 30, max: 110, step: 1 },
+  // Measured on a 159,00 EUR tag: at the old ceiling of 110 the price was still
+  // the slider's prisoner on every grid whose label is wider than it is tall,
+  // while a third of the room above and below it went unused. Twice the
+  // headroom costs nothing -- the fitting pass shrinks whatever will not fit.
+  priceMaxPx: { min: 30, max: 220, step: 1 },
   priceSuffixMaxPx: { min: 8, max: 30, step: 0.5 },
   breakdownMaxPx: { min: 7, max: 22, step: 0.5 },
   // Roomier than the others: a hint like "Ausgabe an der Kasse!" is exactly what

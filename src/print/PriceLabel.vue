@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { computePriceView } from '@/lib/price'
+import { computePriceView, type PriceFormat } from '@/lib/price'
 import type { Label } from '@/lib/types'
 import {
   breakdownRowHeightsCss,
@@ -61,9 +61,11 @@ const props = defineProps<{
   brand?: string | null
   /** Size and margin settings; the defaults are what the shop starts with. */
   labelStyle?: LabelStyle
+  /** How prices are written; must be what auto-fit measured with. */
+  priceFormat?: PriceFormat
 }>()
 
-const price = computed(() => computePriceView(props.label))
+const price = computed(() => computePriceView(props.label, props.priceFormat))
 
 // With the fitted sizes, so a text that had to shrink gives back the height it no
 // longer needs -- the same layout auto-fit measured the price against.

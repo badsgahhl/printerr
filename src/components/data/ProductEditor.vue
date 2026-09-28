@@ -244,6 +244,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { catalogState } from '@/composables/use-catalog'
+import { settings } from '@/composables/use-settings'
 import { resolveLabel } from '@/lib/catalog/resolve'
 import { type Draft, makeId, type Part, type Product } from '@/lib/catalog/types'
 import { computePriceView, formatCents } from '@/lib/price'
@@ -278,7 +279,7 @@ const canSave = computed(() => (draft.value?.name.trim().length ?? 0) > 0)
 /** What the label would print with the current, unsaved form values. */
 const preview = computed(() => {
   if (!draft.value) return { mainText: '—', suffix: null as string | null }
-  const view = computePriceView(resolveLabel(draft.value as Product, partIndex.value))
+  const view = computePriceView(resolveLabel(draft.value as Product, partIndex.value), settings.priceFormat())
   return { mainText: view.mainText, suffix: view.suffix }
 })
 

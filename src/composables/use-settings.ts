@@ -1,6 +1,7 @@
 import { reactive, watch } from 'vue'
 
 import { createSafeStorage, type SafeStorage } from '@/infra/safe-storage'
+import type { PriceFormat } from '@/lib/price'
 import { DEFAULT_LABEL_STYLE, type FontSizeKey, type LabelStyle, type SheetGrid, STYLE_LIMITS } from '@/print/geometry'
 
 export interface Settings {
@@ -9,6 +10,8 @@ export interface Settings {
   brandEnabled: boolean
   /** Prints a 100mm bar on the first sheet, to check the print dialog's scaling. */
   showRuler: boolean
+  /** Writes a price with no cents as 139,– € instead of 139,00 €. */
+  shortenWholePrices: boolean
   /** Sizes and margin; every size is an upper bound, not a fixed value. */
   labelStyle: LabelStyle
 }
@@ -17,6 +20,7 @@ const DEFAULTS: Settings = {
   brandText: '',
   brandEnabled: false,
   showRuler: false,
+  shortenWholePrices: false,
   labelStyle: DEFAULT_LABEL_STYLE
 }
 
@@ -108,6 +112,17 @@ export function createSettings(deps: { storage?: SafeStorage } = {}) {
 
   watch(state, () => void storage.write('settings', { ...state }), { deep: true })
 
+  /**
+   * How prices are written, for everything that shows what the label prints.
+   *
+   * Measuring and printing have to be handed the same thing: a price measured
+   * as "139,00 €" and printed as "139,– €" would be fitted to a width it no
+   * longer needs.
+   */
+  function priceFormat(): PriceFormat {
+    return { shortenWholePrices: state.shortenWholePrices }
+  }
+
   /** What PriceLabel should print, or null to leave the foot empty. */
   function brand(): string | null {
     const text = state.brandText.trim()
@@ -143,7 +158,7 @@ export function createSettings(deps: { storage?: SafeStorage } = {}) {
     return keys.every((key) => state.labelStyle[key] === DEFAULT_LABEL_STYLE[key])
   }
 
-  return { state, brand, setStyle, setGrid, resetStyle, isStyleDefault }
+  return { state, brand, priceFormat, setStyle, setGrid, resetStyle, isStyleDefault }
 }
 
 export type SettingsStore = ReturnType<typeof createSettings>
