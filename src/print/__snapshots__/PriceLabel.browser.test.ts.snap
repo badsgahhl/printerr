@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`a label with a four-figure price, the widest the sho… > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "name": 34,
+  "price": 62,
+  "subtitle": 15,
+}
+`;
+
+exports[`a label with a name long enough to be set smaller > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "artNr": 12,
+  "name": 22,
+  "price": 72,
+  "subtitle": 15,
+}
+`;
+
+exports[`a label with a price of a few euros > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "name": 31,
+  "price": 72,
+}
+`;
+
+exports[`a label with a price with no cents, for the shortene… > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "name": 34,
+  "price": 72,
+  "subtitle": 15,
+}
+`;
+
+exports[`a label with add-ons that are listed but not on disp… > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "breakdownAmount": 12,
+  "breakdownLabel": 12,
+  "name": 34,
+  "price": 72,
+  "subtitle": 15,
+}
+`;
+
+exports[`a label with an add-on description that has to wrap … > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "artNr": 12,
+  "breakdownAmount": 12,
+  "breakdownArtNr": 10.5,
+  "breakdownLabel": 12,
+  "name": 33.5,
+  "price": 72,
+  "priceSuffix": 15.5,
+}
+`;
+
+exports[`a label with an add-on priced in the seller own word… > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "breakdownAmount": 12,
+  "breakdownLabel": 12,
+  "name": 33.5,
+  "price": 72,
+}
+`;
+
+exports[`a label with every optional text at once > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "artNr": 12,
+  "brand": 13,
+  "name": 33.5,
+  "note": 11,
+  "price": 72,
+  "priceSuffix": 15.5,
+  "subtitle": 15,
+}
+`;
+
+exports[`a label with nothing but a name and a price > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "name": 33.5,
+  "price": 72,
+}
+`;
+
+exports[`a label with the exhibition price, with the base pri… > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "artNr": 12,
+  "breakdownAmount": 12,
+  "breakdownArtNr": 10.8,
+  "breakdownLabel": 12,
+  "name": 34,
+  "price": 69,
+  "priceSuffix": 15.5,
+  "subtitle": 15,
+}
+`;
+
+exports[`a label with the foot alone: a hint and the shop name > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "brand": 13,
+  "name": 34,
+  "note": 11,
+  "price": 72,
+}
+`;

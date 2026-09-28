@@ -17,7 +17,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    exclude: [...configDefaults.exclude, 'dist/**'],
+    // The browser suite has a config of its own; jsdom cannot run it.
+    exclude: [...configDefaults.exclude, 'dist/**', '**/*.browser.test.ts'],
     root: fileURLToPath(new URL('./', import.meta.url))
   }
 })

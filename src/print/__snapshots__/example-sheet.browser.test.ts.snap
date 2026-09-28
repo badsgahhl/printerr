@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the example spreadsheet > reads without complaint and prints as its screenshot says > what the example sheet holds 1`] = `
+[
+  "Räuchermann Bergmann",
+  "Engel mit Kerze",
+  "Schwibbogen „Bergparade"",
+  "Nussknacker König",
+  "Mühle „Seiffen"",
+  "Weihnachtspyramide, 4-stöckig",
+]
+`;

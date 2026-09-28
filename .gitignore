@@ -5,3 +5,5 @@ dist
 .vite
 coverage
 .idea
+# Vitest writes the actual/diff pair of a failed screenshot here.
+.vitest

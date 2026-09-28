@@ -151,6 +151,7 @@ pnpm install
 pnpm dev              # http://localhost:4300
 
 pnpm test:unit        # Vitest (watch); "pnpm test:unit run" für einen Durchlauf
+pnpm test:browser     # dasselbe im echten Chromium, mit Screenshots
 pnpm type-check
 pnpm lint
 pnpm format
@@ -159,6 +160,39 @@ pnpm beispiele        # erzeugt die Beispieltabellen neu
 
 `pnpm build` schreibt nach `dist/`; jeder Push auf `main` veröffentlicht das über
 GitHub Pages.
+
+### Was der Browser prüft und jsdom nicht
+
+`pnpm test:unit` läuft in jsdom, und jsdom misst nichts: jede Breite und jede
+Höhe ist dort null. Genau das Ergebnis, um das es hier geht — wie groß die
+Schrift am Ende gesetzt wird —, kann diese Suite also nie sehen.
+
+`pnpm test:browser` rendert dieselben Komponenten in einem echten Chromium, lässt
+die richtige Mess-Sandbox messen und hält von jedem Beispiel zweierlei fest:
+
+- **einen Schnappschuss der eingepassten Schriftgrößen** (`__snapshots__/`) — die
+  Zahlen, die erklären, _warum_ ein Schild so aussieht;
+- **einen Screenshot** (`__screenshots__/`) — der auffällt, wenn es aufhört, so
+  auszusehen. Aufgenommen wird in **Druck-Medien**: dort sind die Schnittlinien
+  ein Viertelmillimeter statt ein Bildschirmpixel, der Schatten der Vorschau ist
+  weg und der Bogen ist die Haaresbreite unter A4.
+
+Abgelichtet ist, was das Geschäft druckt: elf Schilder (von „nur Name und Preis"
+bis Ausstellungspreis mit Aufschlüsselung), jede Aufteilung von 1 bis 64 pro
+Bogen, der angebrochene Bogen, das Maßstab-Lineal, Loch und Preis-Position,
+gekürzte Preise — und die **Beispieltabelle selbst**, einmal komplett durch
+Import und Katalog hindurch aufs Papier.
+
+Die Referenzbilder liegen im Repository. Nach einer gewollten Änderung am Layout
+werden sie mit `pnpm test:browser:update` neu aufgenommen; der Diff im Pull
+Request zeigt dann Bild für Bild, was sich am Druck geändert hat. Beim
+Fehlschlag legt Vitest das Ist-Bild und ein Differenzbild unter `.vitest/` ab.
+
+Ein Wort zur Vorsicht: Screenshots hängen an der Schriftrasterung der Maschine,
+die sie aufnimmt. Deshalb läuft diese Suite bewusst **nicht** in CI — ein
+anderer Runner würde Unterschiede melden, die keine sind. Wer sie dort haben
+will, fixiert dafür ein Container-Image (z. B. `mcr.microsoft.com/playwright`)
+und nimmt die Referenzen darin neu auf.
 
 ### Aufbau
 
