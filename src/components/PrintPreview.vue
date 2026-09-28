@@ -19,6 +19,7 @@
               :fit="fitFor(labelId)"
               :brand="brand"
               :label-style="labelStyle"
+              :price-format="priceFormat"
             />
           </template>
         </PrintSheet>
@@ -33,6 +34,7 @@ import { computed, useTemplateRef } from 'vue'
 
 import type { LabelFit } from '@/composables/use-auto-fit'
 import type { SheetPlan } from '@/lib/paginate'
+import type { PriceFormat } from '@/lib/price'
 import type { Label } from '@/lib/types'
 import { type LabelStyle, mmToPx, SHEET_HEIGHT_MM, sheetCssVars, SHEET_WIDTH_MM } from '@/print/geometry'
 import PriceLabel from '@/print/PriceLabel.vue'
@@ -45,6 +47,7 @@ const props = defineProps<{
   brand: string | null
   showRuler: boolean
   labelStyle: LabelStyle
+  priceFormat: PriceFormat
 }>()
 
 const viewport = useTemplateRef<HTMLElement>('viewport')

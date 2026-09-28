@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { computePriceView } from '@/lib/price'
+import { computePriceView, type PriceFormat } from '@/lib/price'
 import type { Label } from '@/lib/types'
 
 const props = defineProps<{
@@ -66,6 +66,8 @@ const props = defineProps<{
   isSelected: (id: string) => boolean
   copiesOf: (id: string) => number
   overflowing: ReadonlySet<string>
+  /** How prices are written, so the list keeps matching the paper. */
+  priceFormat?: PriceFormat
 }>()
 
 defineEmits<{
@@ -89,7 +91,7 @@ const visible = computed(() => {
 
 /** The price as the label will print it, so the list matches the paper. */
 const priceTextOf = (label: Label): string => {
-  const view = computePriceView(label)
+  const view = computePriceView(label, props.priceFormat)
   return view.suffix === null ? view.mainText : `${view.mainText} (${view.suffix})`
 }
 </script>

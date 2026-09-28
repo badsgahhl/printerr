@@ -110,6 +110,11 @@ resolve before the label face was ever requested.
 The label font (Source Serif 4) is embedded in `src/assets/fonts/` rather than linked, so every machine gets the same
 metrics and therefore the same fitted sizes.
 
+`PriceFormat` (`lib/price.ts`) decides how a price is written -- `shortenWholePrices` prints 139,– € for a price with
+no cents. It has to reach `computePriceView` in both the label and auto-fit, or a price would be measured as one
+string and printed as another. `settings.priceFormat()` is what everything showing "what the label prints" passes on,
+including the picker list and the live preview in the product form.
+
 ## Print constraints that bite
 
 The README section "Dinge, die nicht offensichtlich sind" gives the full reasoning for each rule. In short:
@@ -123,6 +128,11 @@ The README section "Dinge, die nicht offensichtlich sind" gives the full reasoni
   sheets. Otherwise a nearly empty extra page follows each sheet.
 - Cut lines and everything else must print without "background graphics" turned on. Draw them with borders and
   typography, never with CSS backgrounds.
+- **Never measure while the sandbox is hidden.** Print hides `[data-printerr-measure]`, and switching to print media
+  makes Chromium reload the font, which fires `loadingdone` and asks for a fresh round of measurements. A hidden
+  element reports every text as zero wide, and zero fits anywhere, so every label would be set at the top of its
+  slider and overflow. `createDomMeasurer().usable()` answers whether the readings are worth having, and
+  `createAutoFit(measure, canMeasure)` keeps the last real sizes instead of replacing them.
 
 `src/print/print-css.test.ts` guards the cut-line and page-break rules by reading `print.css` as text.
 

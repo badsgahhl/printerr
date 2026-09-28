@@ -13,6 +13,7 @@
         :is-selected="selection.isSelected"
         :copies-of="selection.copiesOf"
         :overflowing="autoFit.overflowing.value"
+        :price-format="settings.priceFormat()"
         @toggle="selection.toggle"
         @set-copies="selection.setCopies"
         @select-all="selection.selectAll(labels)"
@@ -33,6 +34,17 @@
         @grid="settings.setGrid"
         @reset="settings.resetStyle"
       />
+
+      <fieldset class="flex flex-col gap-2 text-sm">
+        <legend class="text-sm font-medium">Preis</legend>
+        <label class="flex items-center gap-2">
+          <Checkbox :model-value="settings.state.shortenWholePrices" @update:model-value="setShortenWholePrices" />
+          <span>
+            Glatte Preise kürzen: <span class="tabular-nums">139,– €</span> statt
+            <span class="tabular-nums">139,00 €</span>
+          </span>
+        </label>
+      </fieldset>
 
       <fieldset class="flex flex-col gap-2 text-sm">
         <legend class="text-sm font-medium">Schild-Fuß</legend>
@@ -83,6 +95,7 @@
         :brand="settings.brand()"
         :show-ruler="settings.state.showRuler"
         :label-style="settings.state.labelStyle"
+        :price-format="settings.priceFormat()"
       />
     </main>
   </div>
@@ -111,10 +124,14 @@ const props = defineProps<{ labels: readonly Label[] }>()
 // The measuring sandbox needs a document, so it is built on first use rather
 // than at module load.
 let measurer: DomMeasurer | null = null
-const autoFit = createAutoFit((input) => {
-  measurer ??= createDomMeasurer()
-  return measurer.measure(input)
-})
+const autoFit = createAutoFit(
+  (input) => {
+    measurer ??= createDomMeasurer()
+    return measurer.measure(input)
+  },
+  // Before it exists there is nothing to distrust; once it does, print hides it.
+  () => measurer?.usable() ?? true
+)
 
 const slots = computed(() => slotsPerSheet(settings.state.labelStyle))
 const sheets = computed(() => selection.planFor(props.labels, slots.value))
@@ -125,6 +142,8 @@ const selectedLabels = computed(() => props.labels.filter((label) => selection.i
 
 const setBrandEnabled = (value: boolean | 'indeterminate') => void (settings.state.brandEnabled = value === true)
 const setShowRuler = (value: boolean | 'indeterminate') => void (settings.state.showRuler = value === true)
+const setShortenWholePrices = (value: boolean | 'indeterminate') =>
+  void (settings.state.shortenWholePrices = value === true)
 
 /**
  * Keep the rendered labels measured at all times.
@@ -132,12 +151,14 @@ const setShowRuler = (value: boolean | 'indeterminate') => void (settings.state.
  * Deliberately not tied to the print button: `beforeprint` cannot await
  * anything, so pressing Cmd+P directly has to find a DOM that is already right.
  */
-watchEffect(() => autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle))
+watchEffect(() =>
+  autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle, settings.priceFormat())
+)
 
 /** Throw every measurement away and take them again. */
 function remeasure(): void {
   autoFit.invalidate()
-  autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle)
+  autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle, settings.priceFormat())
 }
 
 // Everything measured before the embedded face arrives used fallback metrics and
@@ -152,7 +173,7 @@ onBeforeUnmount(() => measurer?.dispose())
 
 async function print(): Promise<void> {
   await document.fonts?.ready
-  autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle)
+  autoFit.ensureMeasured(selectedLabels.value, settings.brand(), settings.state.labelStyle, settings.priceFormat())
   await nextTick()
   // Two frames: one for Vue's DOM patch to land, one for layout to settle with
   // the final font sizes.

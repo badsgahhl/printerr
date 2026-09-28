@@ -10,7 +10,32 @@ import type { Label, LabelExtra } from '@/lib/types'
 // Building an Intl formatter is expensive, so it happens once.
 const EURO = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 
-export function formatCents(cents: number): string {
+/** How prices are written, where the shop has a say in it. */
+export interface PriceFormat {
+  /**
+   * Writes a price with no cents the way a shop window writes it: 139,– € for
+   * 139,00 €. Three characters shorter, which on a small label is the
+   * difference between a price that fills the width and one that can be set
+   * larger. Off unless the shop asks for it.
+   */
+  readonly shortenWholePrices?: boolean
+}
+
+/**
+ * The dash that stands in for two zero cents.
+ *
+ * Built from the same formatter rather than by string surgery, so the grouping
+ * dot and the narrow space before the euro sign stay exactly as Intl writes
+ * them -- only the two zeros are replaced.
+ */
+function wholeEuroText(cents: number): string {
+  return EURO.formatToParts(cents / 100)
+    .map((part) => (part.type === 'fraction' ? '–' : part.value))
+    .join('')
+}
+
+export function formatCents(cents: number, format: PriceFormat = {}): string {
+  if (format.shortenWholePrices === true && cents % 100 === 0) return wholeEuroText(cents)
   return EURO.format(cents / 100)
 }
 
@@ -43,8 +68,8 @@ export function exhibitedWithoutPrice(label: Label): readonly LabelExtra[] {
   return label.extras.filter((extra) => extra.exhibited && extra.priceCents === null)
 }
 
-function amountText(extra: LabelExtra): string {
-  if (extra.priceCents !== null) return formatCents(extra.priceCents)
+function amountText(extra: LabelExtra, format: PriceFormat): string {
+  if (extra.priceCents !== null) return formatCents(extra.priceCents, format)
   return extra.priceText ?? ''
 }
 
@@ -61,19 +86,19 @@ function amountText(extra: LabelExtra): string {
  * but the total silently skipping it would be worse than a total that is visibly
  * flagged as incomplete.
  */
-export function computePriceView(label: Label): PriceView {
+export function computePriceView(label: Label, format: PriceFormat = {}): PriceView {
   const isExhibition = label.extras.some((extra) => extra.exhibited)
 
   if (!isExhibition) {
     return {
       mode: 'base',
       mainCents: label.priceCents,
-      mainText: formatCents(label.priceCents),
+      mainText: formatCents(label.priceCents, format),
       suffix: label.priceNote,
       breakdown: label.extras.map((extra) => ({
         label: extra.name,
         artNr: extra.artNr,
-        amountText: amountText(extra),
+        amountText: amountText(extra, format),
         exhibited: false
       }))
     }
@@ -85,7 +110,7 @@ export function computePriceView(label: Label): PriceView {
   return {
     mode: 'exhibition',
     mainCents,
-    mainText: formatCents(mainCents),
+    mainText: formatCents(mainCents, format),
     suffix: 'wie ausgestellt',
     breakdown: [
       // The base price leads the breakdown; the seller's qualifier ("ohne
@@ -93,13 +118,13 @@ export function computePriceView(label: Label): PriceView {
       {
         label: label.priceNote ?? 'Grundpreis',
         artNr: null,
-        amountText: formatCents(label.priceCents),
+        amountText: formatCents(label.priceCents, format),
         exhibited: false
       },
       ...label.extras.map((extra) => ({
         label: extra.name,
         artNr: extra.artNr,
-        amountText: amountText(extra),
+        amountText: amountText(extra, format),
         exhibited: extra.exhibited
       }))
     ]

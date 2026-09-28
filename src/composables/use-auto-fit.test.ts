@@ -250,6 +250,26 @@ describe('auto fit', () => {
     })
   })
 
+  it('keeps the sizes it has when the sandbox cannot be measured', () => {
+    // What print does to the sandbox: it hides it, and a hidden element reports
+    // every text as zero wide. Zero fits anywhere, so a fresh round would set
+    // every label at the top of its slider and overflow the paper.
+    let measurable = true
+    const measure = vi.fn<TextMeasurer>(fakeMeasurer())
+    const autoFit = createAutoFit(measure, () => measurable)
+
+    autoFit.ensureMeasured([label()], null)
+    const measured = autoFit.fitFor('M-01')
+    expect(measured?.sizes.price).toBeGreaterThan(0)
+
+    measurable = false
+    const calls = measure.mock.calls.length
+    autoFit.ensureMeasured([label()], null, { ...DEFAULT_LABEL_STYLE, priceMaxPx: 200 })
+
+    expect(autoFit.fitFor('M-01')).toBe(measured)
+    expect(measure.mock.calls).toHaveLength(calls)
+  })
+
   it('gives the exhibition price its own size, separate from the base price', () => {
     const autoFit = createAutoFit(fakeMeasurer())
     autoFit.ensureMeasured(

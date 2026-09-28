@@ -101,6 +101,23 @@ describe('createDomMeasurer', () => {
     measurer.dispose()
   })
 
+  it('knows when its readings are worthless', () => {
+    // Print hides the sandbox, and a hidden element measures every text as
+    // nothing -- which the fitting search would read as "fits at any size".
+    const measurer = createDomMeasurer()
+    expect(measurer.usable()).toBe(true)
+
+    const host = document.querySelector<HTMLElement>('[data-printerr-measure]')!
+    host.style.display = 'none'
+    expect(measurer.usable()).toBe(false)
+
+    host.style.display = ''
+    expect(measurer.usable()).toBe(true)
+
+    measurer.dispose()
+    expect(measurer.usable()).toBe(false)
+  })
+
   it('tolerates an unknown style key', () => {
     const measurer = createDomMeasurer()
 
