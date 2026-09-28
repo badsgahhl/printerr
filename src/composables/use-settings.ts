@@ -83,6 +83,8 @@ export function normalizeStyle(raw: (Partial<LabelStyle> & LegacyStyle) | undefi
     columns: Math.round(fix(source.columns, 'columns')),
     rows: Math.round(fix(source.rows, 'rows')),
     paddingMm: fix(source.paddingMm, 'paddingMm'),
+    punchMm: fix(source.punchMm, 'punchMm'),
+    pricePosPct: fix(source.pricePosPct, 'pricePosPct'),
     nameMaxPx: fix(source.nameMaxPx, 'nameMaxPx'),
     subtitleMaxPx: fix(source.subtitleMaxPx, 'subtitleMaxPx'),
     artNrMaxPx: fix(source.artNrMaxPx, 'artNrMaxPx'),

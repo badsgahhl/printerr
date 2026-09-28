@@ -50,6 +50,23 @@ export interface LabelStyle {
   readonly columns: number
   readonly rows: number
   readonly paddingMm: number
+  /**
+   * A strip kept clear at the top of every label, for the hole a ribbon needs.
+   *
+   * Zero unless the shop asks for it, and in real millimetres rather than
+   * millimetres of the reference label: a hole punch makes the same hole on a
+   * tag of any size, so this is the one measurement that must not scale.
+   */
+  readonly punchMm: number
+  /**
+   * Where the price sits in the room left for it, as a percentage.
+   *
+   * 50 centres it, which is what the label did before the setting existed; 100
+   * puts it on the floor of its block and 0 against the text above. It only
+   * moves the price -- the room, and therefore the size it is set at, is the
+   * same wherever it stands.
+   */
+  readonly pricePosPct: number
   readonly nameMaxPx: number
   readonly subtitleMaxPx: number
   readonly artNrMaxPx: number
@@ -65,7 +82,7 @@ export interface LabelStyle {
 }
 
 /** The style keys that are font sizes, as opposed to the grid and the margin. */
-export type FontSizeKey = Exclude<keyof LabelStyle, 'columns' | 'rows' | 'paddingMm'>
+export type FontSizeKey = Exclude<keyof LabelStyle, 'columns' | 'rows' | 'paddingMm' | 'punchMm' | 'pricePosPct'>
 
 /** Every font size, top to bottom in the order the texts sit on the label. */
 export const FONT_SIZE_KEYS: readonly FontSizeKey[] = [
@@ -88,6 +105,8 @@ export const DEFAULT_LABEL_STYLE: LabelStyle = {
    * on the edge of the paper. Nine millimetres clears that with room to spare.
    */
   paddingMm: 9,
+  punchMm: 0,
+  pricePosPct: 50,
   nameMaxPx: 34,
   subtitleMaxPx: 15,
   artNrMaxPx: 12,
@@ -125,6 +144,10 @@ export const STYLE_LIMITS = {
   columns: { min: 1, max: 8, step: 1 },
   rows: { min: 1, max: 8, step: 1 },
   paddingMm: { min: 2, max: 16, step: 0.5 },
+  // Twenty millimetres clears a 6mm office punch with room to spare; what a
+  // small label actually grants is capped below.
+  punchMm: { min: 0, max: 20, step: 0.5 },
+  pricePosPct: { min: 0, max: 100, step: 5 },
   nameMaxPx: { min: 16, max: 52, step: 1 },
   subtitleMaxPx: { min: 8, max: 30, step: 0.5 },
   artNrMaxPx: { min: 7, max: 24, step: 0.5 },
@@ -286,11 +309,28 @@ export const SAFE_PADDING_MM = 5
 export const paddingMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
   Math.max(STYLE_LIMITS.paddingMm.min, style.paddingMm * typeScale(style))
 
+/**
+ * The most of a label the hole strip may claim.
+ *
+ * It is the whole guard against the setting wrecking a small format. The strip
+ * does not scale with the label -- a hole is a hole -- so on a sixty-fourth of
+ * A4 the twenty millimetres the slider allows would be more than half the tag
+ * and leave nothing for the price. A third is enough for a small punch and
+ * still leaves two thirds for name, price and foot; what is asked for beyond
+ * that is not silently taken, the settings say so.
+ */
+export const MAX_PUNCH_SHARE = 1 / 3
+
+/** The strip kept clear at the top of the label, as this format can afford it. */
+export const punchHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
+  Math.min(Math.max(0, style.punchMm), labelHeightMm(style) * MAX_PUNCH_SHARE)
+
 export const contentWidthMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
   labelWidthMm(style) - 2 * paddingMm(style)
 
+/** What is left for text once the margin and the hole strip have taken theirs. */
 export const contentHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
-  labelHeightMm(style) - 2 * paddingMm(style)
+  labelHeightMm(style) - 2 * paddingMm(style) - punchHeightMm(style)
 
 export const nameHeightMm = (style: LabelStyle = DEFAULT_LABEL_STYLE): number =>
   BASE_NAME_MM * sizeScale(style, 'nameMaxPx')
@@ -553,6 +593,10 @@ export const FONT_SIZE_VARS: Readonly<Record<StyleKey, string>> = {
 
 const mm = (value: number): string => `${Math.round(value * 1000) / 1000}mm`
 
+/** Where the price stands in its block, clamped to the slider's range. */
+const pricePosPct = (style: LabelStyle): number =>
+  Math.min(STYLE_LIMITS.pricePosPct.max, Math.max(STYLE_LIMITS.pricePosPct.min, style.pricePosPct))
+
 /** Custom properties handed to the label element, so CSS reuses these numbers. */
 export function labelCssVars(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): Record<string, string> {
   const heights = textHeightsMm(content, style)
@@ -560,6 +604,11 @@ export function labelCssVars(content: LabelContent, style: LabelStyle = DEFAULT_
     '--label-w': mm(labelWidthMm(style)),
     '--label-h': mm(labelHeightMm(style)),
     '--label-pad': mm(paddingMm(style)),
+    '--label-punch-h': mm(punchHeightMm(style)),
+    // Two empty flex items share the room around the price in this ratio; equal
+    // shares centre it, which is what the default 50 means.
+    '--label-price-lead': String(pricePosPct(style)),
+    '--label-price-trail': String(100 - pricePosPct(style)),
     '--label-head-h': mm(headHeightMm(content, style)),
     '--label-foot-h': mm(footHeightMm(content, style)),
     '--label-name-h': mm(nameHeightMm(style)),

@@ -18,6 +18,11 @@
   height: var(--label-h);
   flex-direction: column;
   padding: var(--label-pad);
+
+  /* The strip a ribbon hole needs, on top of the margin rather than instead of
+     it: the hole goes above the text, not where the text would have been. Zero
+     until the shop asks for one, so an ordinary label keeps its layout. */
+  padding-top: calc(var(--label-pad) + var(--label-punch-h, 0mm));
   background: #fff;
   color: #1a1a1a;
   font-family: var(--label-font, Georgia, 'Times New Roman', serif);
@@ -70,13 +75,38 @@
   overflow: hidden;
 }
 
+/*
+ * The price, and where in its room it stands.
+ *
+ * Two empty items, one above it and one below, grow in the ratio the setting
+ * asks for: equal shares centre the price -- the default, and what this was
+ * before the setting existed -- while all of it above puts the price on the
+ * floor. The room itself never changes, so moving the price does not resize it.
+ *
+ * The gap to the suffix cannot be the container's `gap` any more, which would
+ * space out the empty items as well; the suffix carries it as a margin, which
+ * is also the only case geometry.ts counts it in.
+ */
 .label__price {
   display: flex;
   height: var(--label-price-h);
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--label-price-gap);
+}
+
+.label__price::before,
+.label__price::after {
+  content: '';
+  flex-shrink: 1;
+  flex-basis: 0;
+}
+
+.label__price::before {
+  flex-grow: var(--label-price-lead, 1);
+}
+
+.label__price::after {
+  flex-grow: var(--label-price-trail, 1);
 }
 
 .label__price-main {
@@ -90,6 +120,7 @@
 
 .label__price-suffix {
   height: var(--label-price-suffix-h);
+  margin-top: var(--label-price-gap);
   color: #555;
   font-size: var(--fs-price-suffix, 12px);
   line-height: 1.1;

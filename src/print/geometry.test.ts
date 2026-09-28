@@ -27,6 +27,7 @@ import {
   paddingMm,
   pxToMm,
   priceBlockHeightMm,
+  punchHeightMm,
   REFERENCE_HEIGHT_MM,
   SAFE_PADDING_MM,
   REFERENCE_WIDTH_MM,
@@ -428,6 +429,86 @@ describe('label boxes follow the grid', () => {
   })
 })
 
+describe('the hole for the ribbon', () => {
+  it('is off until the shop asks for it', () => {
+    // The guard that matters most: a label nobody punches must come out exactly
+    // as it did before the setting existed.
+    expect(punchHeightMm()).toBe(0)
+    expect(contentHeightMm()).toBe(REFERENCE_HEIGHT_MM - 2 * paddingMm())
+    expect(labelCssVars(full(2))['--label-punch-h']).toBe('0mm')
+  })
+
+  it('takes its strip off the price, not off the name', () => {
+    const pierced = styled({ punchMm: 10 })
+
+    expect(contentHeightMm(pierced)).toBeCloseTo(contentHeightMm() - 10, 10)
+    expect(headHeightMm(full(2), pierced)).toBe(headHeightMm(full(2)))
+    expect(priceBlockHeightMm(full(2), pierced)).toBeCloseTo(priceBlockHeightMm(full(2)) - 10, 10)
+  })
+
+  it('does not shrink with the label, because a punch does not', () => {
+    // Nine millimetres of paper is nine millimetres whatever the tag is cut to.
+    // Scaled down like the margin, the strip would fail exactly on the small
+    // formats that are hung on a ribbon in the first place.
+    expect(punchHeightMm(styled({ columns: 4, rows: 4, punchMm: 9 }))).toBe(9)
+  })
+
+  it('never takes more than a third of a label, whatever the grid', () => {
+    const pierced = (grid: { columns: number; rows: number }): LabelStyle =>
+      styled({ ...grid, punchMm: STYLE_LIMITS.punchMm.max, paddingMm: STYLE_LIMITS.paddingMm.max })
+
+    const greedy = allGrids.filter((grid) => punchHeightMm(pierced(grid)) > labelHeightMm(pierced(grid)) / 3 + 1e-9)
+    const collapsed = allGrids.filter((grid) => contentHeightMm(pierced(grid)) <= 0)
+
+    expect(greedy).toEqual([])
+    expect(collapsed).toEqual([])
+  })
+
+  it('leaves a price to print on the smallest label at the deepest hole', () => {
+    const tiny = styled({
+      columns: STYLE_LIMITS.columns.max,
+      rows: STYLE_LIMITS.rows.max,
+      punchMm: STYLE_LIMITS.punchMm.max
+    })
+    const boxes = labelBoxes(full(0), tiny)
+
+    expect(priceBlockHeightMm(full(0), tiny)).toBeGreaterThan(0)
+    expect(boxes.price.height).toBeGreaterThan(0)
+    expect(boxes.price.width).toBeGreaterThan(0)
+  })
+})
+
+describe('where the price stands', () => {
+  it('centres it by default, as the label always did', () => {
+    const vars = labelCssVars(full(2))
+
+    expect(vars['--label-price-lead']).toBe(vars['--label-price-trail'])
+  })
+
+  it('moves the price without resizing it', () => {
+    // "Runterschieben" must not turn into "kleiner machen": the room the price
+    // gets, and therefore the size it is fitted at, is the same wherever it
+    // stands in that room.
+    const low = styled({ pricePosPct: 100 })
+    const layout = (style: LabelStyle) => ({
+      price: labelBoxes(full(2), style).price,
+      block: priceBlockHeightMm(full(2), style),
+      head: headHeightMm(full(2), style)
+    })
+
+    expect(layout(low)).toEqual(layout(DEFAULT_LABEL_STYLE))
+    expect(labelCssVars(full(2), low)['--label-price-lead']).toBe('100')
+    expect(labelCssVars(full(2), low)['--label-price-trail']).toBe('0')
+  })
+
+  it('pulls a stored position back into range', () => {
+    // Settings outlive app versions; a ratio of -5 to 105 would put the price
+    // outside its own block.
+    expect(labelCssVars(full(0), styled({ pricePosPct: 999 }))['--label-price-lead']).toBe('100')
+    expect(labelCssVars(full(0), styled({ pricePosPct: -8 }))['--label-price-lead']).toBe('0')
+  })
+})
+
 describe('font ranges', () => {
   it('gives the price the largest type on the label', () => {
     expect(fontRanges().price.maxPx).toBeGreaterThan(fontRanges().name.maxPx)
@@ -492,12 +573,19 @@ describe('css custom properties', () => {
     expect(vars['--label-h']).toBe('74.25mm')
   })
 
-  it('expresses every label value in millimetres', () => {
-    const notMillimetres = Object.entries(labelCssVars(full(2)))
+  it('expresses every label value in millimetres, bar the two ratios', () => {
+    // `flex-grow` takes a number and would ignore a length, so the pair that
+    // positions the price is the one exception. Naming it here keeps a
+    // forgotten unit anywhere else a failure.
+    const vars = labelCssVars(full(2))
+    const ratios = ['--label-price-lead', '--label-price-trail']
+    const notMillimetres = Object.entries(vars)
+      .filter(([key]) => !ratios.includes(key))
       .filter(([, value]) => !/^-?\d+(\.\d+)?mm$/u.test(value))
       .map(([key]) => key)
 
     expect(notMillimetres).toEqual([])
+    expect(ratios.map((key) => vars[key])).toEqual(['50', '50'])
   })
 
   it('rounds away floating point noise the grid would otherwise produce', () => {

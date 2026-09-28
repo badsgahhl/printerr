@@ -36,7 +36,7 @@ Oben wird zwischen **Drucken** und **Daten** umgeschaltet.
 **Drucken** ist die Auswahl mit der Bogenvorschau. `Cmd+P` liefert immer die
 Schilder, auch aus dem Daten-Bereich heraus.
 
-Unter **Bogen & Schildgröße** wird die Aufteilung gewählt: 1, 2, 4, 6, 8, 9, 12,
+Unter **Bogen & Schild** wird die Aufteilung gewählt: 1, 2, 4, 6, 8, 9, 12,
 16, 32 oder 64 pro Bogen, oder frei als Spalten × Zeilen. Jede Aufteilung teilt
 A4 ohne Rest, damit die Schnittlinien nicht wandern. Die Reihe halbiert sich der
 Länge nach weiter: 64 pro Bogen ist das 16er-Schild noch einmal geviertelt,
@@ -47,6 +47,29 @@ während Untertitel, Artikelnummer und Ladenname unter einen Millimeter geraten.
 Die Typografie skaliert mit — die Größenregler gelten für ein Viertel-A4 und
 werden auf das gewählte Format umgerechnet, sodass ein Wechsel das Design behält
 statt die Schrift zu zertrümmern.
+
+## Anhänger statt Schild
+
+Zwei Regler machen aus dem Schild einen Anhänger, der am Bändchen hängt:
+
+- **Loch oben fürs Bändchen** hält oben auf jedem Schild einen Streifen frei.
+  Die Schrift rückt nach unten, das Loch geht also nicht mehr durch den
+  Produktnamen. Der Streifen steht in echten Millimetern und wächst _nicht_ mit
+  dem Format mit: eine Lochzange stanzt auf dem A10-Anhänger dasselbe Loch wie
+  auf dem Viertel-A4.
+- **Preis steht** schiebt den Preis in dem Platz, den er ohnehin hat — mittig
+  wie bisher, ganz unten, oder irgendwo dazwischen. Der Platz ändert sich dabei
+  nicht, der Preis wird also verschoben und nicht kleiner.
+
+Beides ist ab Werk aus: Loch 0 mm, Preis mittig. Ein Schild, das niemand
+aufhängt, sieht damit aus wie zuvor — Pixel für Pixel, auch das mit Preiszusatz
+und Aufschlüsselung.
+
+Damit der Streifen ein kleines Format nicht auffrisst, nimmt er höchstens ein
+Drittel der Schildhöhe. Auf dem 64er-Bogen sind das 12,4 der eingestellten 20 mm
+— und die App sagt das, statt stillschweigend weniger zu nehmen. Was darunter
+bleibt, verteilt die Automatik wie immer: alle Schriftgrößen sind Obergrenzen,
+der Preis behält seinen Mindestplatz.
 
 Unter **Schriftgrößen** hat jeder Text des Schilds einen eigenen Regler, von oben
 nach unten: Produktname, Untertitel, Artikelnummer, Preis, Preiszusatz, Zusätze,
