@@ -75,6 +75,10 @@ The pipelines:
 - **Print:** `resolveLabels` → `computePriceView` (`lib/price.ts`) → `createAutoFit` → `paginate` → `PrintSheet` /
   `PriceLabel`.
 
+A label needs a name **or** a price, not both: `canSave` in the product form, the `missing-name` diagnostic in
+`build-labels.ts` and the `.ods` round trip all follow that rule, and `LabelContent.name` hands the room a missing
+name would have taken to the price.
+
 ### The exhibition price rule (`lib/price.ts`)
 
 If any add-on is marked as exhibited, the large price is the base price plus every exhibited add-on. The base price

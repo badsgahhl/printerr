@@ -24,7 +24,7 @@ darüber stört nicht.
 | Spalte      | Pflicht | Bedeutung                                                                           |
 | ----------- | ------- | ----------------------------------------------------------------------------------- |
 | **ID**      | ja      | Eindeutige Kennung, z. B. `M-01`. Darüber werden die Zusätze zugeordnet.            |
-| **Name**    | ja      | Die große Zeile oben auf dem Schild.                                                |
+| **Name**    | fast    | Die große Zeile oben auf dem Schild. Darf leer bleiben, wenn ein Preis dasteht.     |
 | Untertitel  | –       | Hersteller, Holzart, Größe — freier Text, z. B. `KWO · Erle, handbemalt`.           |
 | ArtNr       | –       | Artikelnummer.                                                                      |
 | **Preis**   | ja      | Preis des Produkts allein. Am besten als Zahl formatieren.                          |
@@ -104,7 +104,8 @@ in der Aufschlüsselung.
 Alles davon meldet die App mit Blatt, Zeile und Spalte:
 
 - zwei Zeilen mit derselben **ID**
-- eine Zeile ohne **ID** oder ohne **Name**
+- eine Zeile ohne **ID**
+- eine Zeile, die weder **Name** noch **Preis** hat (eines von beidem genügt)
 - ein Preis, der keiner ist (`auf Anfrage` gehört nicht in die Preisspalte)
 - eine **ProduktID** im Blatt _Zusätze_, die es im Blatt _Produkte_ nicht gibt
 - ein ausgestellter Zusatz ohne Preis

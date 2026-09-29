@@ -1,7 +1,7 @@
 <template>
   <article class="label" :style="style">
     <header class="label__head">
-      <div class="label__name">{{ label.name }}</div>
+      <div v-if="label.name" class="label__name">{{ label.name }}</div>
       <div v-if="label.subtitle" class="label__subtitle">{{ label.subtitle }}</div>
       <div v-if="label.artNr" class="label__artnr">Art. {{ label.artNr }}</div>
     </header>

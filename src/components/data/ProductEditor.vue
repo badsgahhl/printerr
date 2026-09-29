@@ -30,7 +30,8 @@
         <TableBody>
           <TableRow v-for="product in visible" :key="product.id">
             <TableCell>
-              <span class="font-medium">{{ product.name }}</span>
+              <span v-if="product.name" class="font-medium">{{ product.name }}</span>
+              <span v-else class="text-muted-foreground font-medium italic">ohne Namen</span>
               <span v-if="product.subtitle" class="text-muted-foreground block text-xs">{{ product.subtitle }}</span>
             </TableCell>
             <TableCell class="text-muted-foreground">{{ product.artNr ?? '—' }}</TableCell>
@@ -71,7 +72,7 @@
             </div>
             <div class="flex flex-1 flex-col gap-1.5">
               <Label for="prod-price">Preis</Label>
-              <MoneyInput v-model="priceCents" />
+              <MoneyInput id="prod-price" v-model="priceCents" />
             </div>
             <div class="flex w-24 flex-col gap-1.5">
               <Label for="prod-copies">Anzahl</Label>
@@ -173,7 +174,7 @@
                 <Label for="prod-newpart">… oder neues Teil anlegen</Label>
                 <Input id="prod-newpart" v-model="newPartName" placeholder="Bezeichnung" />
               </div>
-              <MoneyInput v-model="newPartPrice" class="w-28" />
+              <MoneyInput v-model="newPartPrice" class="w-28" aria-label="Preis des neuen Teils" />
               <Button variant="secondary" :disabled="newPartName.trim() === ''" @click="createAndAttach">
                 Anlegen
               </Button>
@@ -274,7 +275,14 @@ const attachable = computed(() =>
   catalogState.parts.value.filter((part) => !draft.value?.parts.some((link) => link.partId === part.id))
 )
 
-const canSave = computed(() => (draft.value?.name.trim().length ?? 0) > 0)
+/**
+ * A name or a price is enough.
+ *
+ * Plenty of shelves carry things that need no name on the tag -- the piece is
+ * in front of the customer and the price is all the label has to add. What
+ * cannot be saved is a product that says nothing at all.
+ */
+const canSave = computed(() => (draft.value?.name.trim().length ?? 0) > 0 || (draft.value?.priceCents ?? 0) > 0)
 
 /** What the label would print with the current, unsaved form values. */
 const preview = computed(() => {

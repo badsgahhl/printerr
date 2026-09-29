@@ -311,7 +311,17 @@ export function buildLabels(sheets: readonly RawSheet[]): BuildResult {
     }
     seenIds.set(id, rowNumber)
 
-    if (name.length === 0) {
+    const priceCell = cellAt(row, map.price)
+    const price = readPriceCents(priceCell)
+
+    /*
+     * A name or a price, not both.
+     *
+     * Plenty of shelves carry things whose tag needs no name: the piece stands
+     * in front of the customer and the price is all the label adds. A row with
+     * neither says nothing at all, and that is still a mistake.
+     */
+    if (name.length === 0 && !price.ok) {
       context.diagnostics.push({
         severity: 'error',
         code: 'missing-name',
@@ -319,13 +329,11 @@ export function buildLabels(sheets: readonly RawSheet[]): BuildResult {
         row: rowNumber,
         column: PRODUCT_FIELD_NAMES.name,
         labelId: id,
-        message: `Zeile ${rowNumber}: Schild „${id}" hat keinen Namen.`
+        message: `Zeile ${rowNumber}: Schild „${id}" hat weder Namen noch Preis.`
       })
       continue
     }
 
-    const priceCell = cellAt(row, map.price)
-    const price = readPriceCents(priceCell)
     if (!price.ok) {
       context.diagnostics.push({
         severity: 'error',

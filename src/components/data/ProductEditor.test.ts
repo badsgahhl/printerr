@@ -100,13 +100,32 @@ describe('editing a product', () => {
     expect(catalogState.products.value[0]?.name).toBe('Mühle "Seiffen"')
   })
 
-  it('refuses to save a product with no name', async () => {
+  it('refuses to save a product that says nothing at all', async () => {
     const user = userEvent.setup()
     render(ProductEditor)
 
     await user.click(screen.getByRole('button', { name: /Neues Produkt/u }))
 
     expect(screen.getByRole('button', { name: 'Speichern' })).toBeDisabled()
+  })
+
+  it('saves a product that has a price and no name', async () => {
+    // Some shelves need nothing but the price on the tag.
+    const user = userEvent.setup()
+    render(ProductEditor)
+
+    await user.click(screen.getByRole('button', { name: /Neues Produkt/u }))
+    await user.type(screen.getByLabelText('Preis'), '19,90')
+    await user.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(catalogState.products.value).toEqual([expect.objectContaining({ name: '', priceCents: 1990 })])
+  })
+
+  it('says so in the list when a product has no name', async () => {
+    catalogState.saveProduct(product('p1', { name: '', priceCents: 1990 }))
+    render(ProductEditor)
+
+    expect(screen.getByText('ohne Namen')).toBeInTheDocument()
   })
 
   it('shows what the label will print while the form is still open', async () => {

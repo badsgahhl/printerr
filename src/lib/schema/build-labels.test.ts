@@ -159,10 +159,21 @@ describe('buildLabels diagnostics', () => {
     expect(result.labels).toEqual([])
   })
 
-  it('rejects a row without a name', () => {
+  it('takes a row that has a price but no name', () => {
+    // The piece stands in front of the customer; the tag only has to say what
+    // it costs.
     const result = buildLabels([products([[text('A'), blank, blank, blank, number(10)]])])
 
+    expect(codes(result)).toEqual([])
+    expect(result.labels).toEqual([expect.objectContaining({ id: 'A', name: '', priceCents: 1000 })])
+  })
+
+  it('rejects a row that has neither a name nor a price', () => {
+    const result = buildLabels([products([[text('A'), blank, blank, blank, blank]])])
+
     expect(codes(result)).toEqual(['missing-name'])
+    expect(result.diagnostics[0]?.message).toContain('weder Namen noch Preis')
+    expect(result.labels).toEqual([])
   })
 
   it('distinguishes a missing price from an unreadable one', () => {

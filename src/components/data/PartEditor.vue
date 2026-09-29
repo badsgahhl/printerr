@@ -61,7 +61,7 @@
             </div>
             <div class="flex flex-1 flex-col gap-1.5">
               <Label for="part-price">Preis</Label>
-              <MoneyInput v-model="priceCents" allow-empty placeholder="leer lassen für Freitext" />
+              <MoneyInput id="part-price" v-model="priceCents" allow-empty placeholder="leer lassen für Freitext" />
             </div>
           </div>
 

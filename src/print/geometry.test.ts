@@ -44,6 +44,7 @@ const styled = (over: Partial<LabelStyle>): LabelStyle => ({ ...DEFAULT_LABEL_ST
 const full = (breakdownRows = 0, over: Partial<LabelContent> = {}): LabelContent => ({
   breakdownRows,
   breakdownHasArtNr: false,
+  name: true,
   subtitle: true,
   artNr: true,
   priceSuffix: true,
@@ -52,7 +53,7 @@ const full = (breakdownRows = 0, over: Partial<LabelContent> = {}): LabelContent
   ...over
 })
 
-const OPTIONAL_TEXTS = ['subtitle', 'artNr', 'priceSuffix', 'note', 'brand'] as const
+const OPTIONAL_TEXTS = ['name', 'subtitle', 'artNr', 'priceSuffix', 'note', 'brand'] as const
 
 /** Every combination of optional texts a label can print or leave out. */
 const allContents = (breakdownRows: number): LabelContent[] =>
@@ -426,6 +427,30 @@ describe('label boxes follow the grid', () => {
 
     expect(paddingMm(tiny)).toBeGreaterThanOrEqual(STYLE_LIMITS.paddingMm.min)
     expect(contentWidthMm(tiny)).toBeGreaterThan(0)
+  })
+})
+
+describe('a label with no name', () => {
+  it('gives the room the name would have taken to the price', () => {
+    const named = full(0)
+    const nameless = full(0, { name: false })
+
+    expect(headHeightMm(nameless)).toBeLessThan(headHeightMm(named))
+    expect(priceBlockHeightMm(nameless)).toBeGreaterThan(priceBlockHeightMm(named))
+    expect(labelBoxes(nameless).name.height).toBe(0)
+  })
+
+  it('does not leave the gap that separated the name from the subtitle', () => {
+    // The gap belongs between two lines; with the name gone the subtitle is
+    // the first line and starts at the top.
+    const subtitleOnly = full(0, { name: false, artNr: false })
+    const heights = labelBoxes(subtitleOnly)
+
+    expect(mmToPx(headHeightMm(subtitleOnly))).toBeCloseTo(heights.subtitle.height, 6)
+  })
+
+  it('still prints its price at the size the room allows', () => {
+    expect(labelBoxes(full(0, { name: false })).price.height).toBeGreaterThan(labelBoxes(full(0)).price.height)
   })
 })
 
