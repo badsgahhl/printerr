@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-col gap-3">
+  <div class="flex h-full min-h-0 flex-col gap-3">
     <div class="flex items-center gap-2">
       <Input v-model="query" placeholder="Teile durchsuchen" class="max-w-xs" />
       <span class="text-muted-foreground text-sm">{{ parts.length }} Teile</span>
