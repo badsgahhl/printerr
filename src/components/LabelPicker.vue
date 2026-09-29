@@ -26,7 +26,9 @@
         />
 
         <label :for="`pick-${label.id}`" class="min-w-0 flex-1 cursor-pointer">
-          <span class="text-ink block truncate text-sm">{{ label.name }}</span>
+          <span class="text-ink block truncate text-sm" :class="{ 'text-muted-foreground italic': !label.name }">{{
+            label.name || 'ohne Namen'
+          }}</span>
           <span class="text-ink-soft block truncate text-xs">
             <template v-if="label.artNr">Art. {{ label.artNr }} · </template>
             {{ priceTextOf(label) }}

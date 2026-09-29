@@ -75,9 +75,23 @@ exports[`a label with every optional text at once > is fitted and drawn as its s
 }
 `;
 
+exports[`a label with no name, but a maker and an article num… > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
+  "artNr": 12,
+  "price": 72,
+  "subtitle": 15,
+}
+`;
+
 exports[`a label with nothing but a name and a price > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
 {
   "name": 33.5,
+  "price": 72,
+}
+`;
+
+exports[`a label with nothing but a price, for a shelf where … > is fitted and drawn as its screenshot says > fitted sizes in px 1`] = `
+{
   "price": 72,
 }
 `;

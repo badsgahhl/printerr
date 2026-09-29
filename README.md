@@ -30,6 +30,9 @@ Oben wird zwischen **Drucken** und **Daten** umgeschaltet.
 - Ein Produkt darf den Preis eines Teils **im Einzelfall überschreiben**, ohne
   das Teil für alle anderen zu ändern. Ein Rückstell-Knopf holt den
   Katalogpreis zurück.
+- Ein **Name ist nicht nötig**, wenn ein Preis dasteht: manche Regale brauchen
+  nur die Zahl, das Stück steht ja davor. Das Schild gibt den freien Platz dann
+  dem Preis. Nur ganz ohne Namen _und_ ohne Preis lässt sich nichts anlegen.
 - Was das Schild groß zeigen wird, steht live im Formular — bevor irgendetwas
   gedruckt ist.
 

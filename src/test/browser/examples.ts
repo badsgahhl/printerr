@@ -146,6 +146,16 @@ export const LABEL_EXAMPLES: readonly LabelExample[] = [
     label: label({ id: 'whole-price', name: 'Nussknacker König', subtitle: 'Dregeno', priceCents: 13_900 })
   },
   {
+    key: 'price-only',
+    what: 'nothing but a price, for a shelf where the piece speaks for itself',
+    label: label({ id: 'price-only', name: '', priceCents: 1990 })
+  },
+  {
+    key: 'no-name-but-the-rest',
+    what: 'no name, but a maker and an article number',
+    label: label({ id: 'no-name-but-the-rest', name: '', subtitle: 'Dregeno', artNr: 'L024/070', priceCents: 15_900 })
+  },
+  {
     key: 'note-and-brand',
     what: 'the foot alone: a hint and the shop name',
     label: label({
@@ -159,24 +169,29 @@ export const LABEL_EXAMPLES: readonly LabelExample[] = [
 ]
 
 /**
- * As many labels as a sheet has slots, cycling through the examples.
+ * What a sheet screenshot is filled with, named rather than taken by position.
  *
- * Every slot gets a different one, so a sheet screenshot shows the grid holding
- * a short name next to a long one and a plain price next to a breakdown.
+ * Every slot gets a different label, so a sheet shows the grid holding a short
+ * name next to a long one and a plain price next to a breakdown. Naming them
+ * keeps the sheets still when an example is added above: a new label variant
+ * should cost one new screenshot, not a rewrite of every sheet.
  */
+const SHEET_FILL: readonly string[] = [
+  'everything',
+  'exhibition',
+  'long-name',
+  'big-price',
+  'bare',
+  'breakdown-long',
+  'price-only',
+  'small-price'
+]
+
+/** As many labels as a sheet has slots, cycling through those. */
 export function fillSheet(count: number): readonly Label[] {
+  const pool = SHEET_FILL.map((key) => LABEL_EXAMPLES.find((example) => example.key === key)!.label)
   return Array.from({ length: count }, (_, index) => {
-    const source = LABEL_EXAMPLES[index % LABEL_EXAMPLES.length]!.label
+    const source = pool[index % pool.length]!
     return { ...source, id: `${source.id}-${index}` }
   })
 }
-
-/** Six labels that fill a sheet with something different in every slot. */
-export const SHEET_LABELS: readonly Label[] = [
-  LABEL_EXAMPLES[1]!.label,
-  LABEL_EXAMPLES[2]!.label,
-  LABEL_EXAMPLES[6]!.label,
-  LABEL_EXAMPLES[7]!.label,
-  LABEL_EXAMPLES[0]!.label,
-  LABEL_EXAMPLES[4]!.label
-]

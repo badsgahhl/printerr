@@ -67,6 +67,19 @@ describe('exporting the catalogue as a sheet', () => {
     expect(printable(labels)).toEqual(printable(resolveLabels(catalog)))
   })
 
+  it('brings a label that has only a price back with only a price', () => {
+    // The shop may save a tag with no name at all. If the export could not be
+    // read back, the next import would quietly drop it.
+    const nameless = catalogFromLabels([label('N-01', { name: '', priceCents: 1990 })]).catalog
+    const { sheets } = readOds(catalogToOds(nameless))
+    const { labels, diagnostics } = buildLabels(sheets)
+
+    expect(diagnostics).toEqual([])
+    expect(printable(labels)).toEqual(printable(resolveLabels(nameless)))
+    expect(labels[0]?.name).toBe('')
+    expect(labels[0]?.priceCents).toBe(1990)
+  })
+
   it('writes an overridden price as the price that actually applies', () => {
     // The sheet has no notion of a catalogue price plus an override, so what
     // goes in the cell is what the label shows.

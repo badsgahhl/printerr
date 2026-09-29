@@ -223,6 +223,8 @@ export interface LabelContent {
   readonly breakdownRows: number
   /** Claims the article number column in every row as soon as one row has a number. */
   readonly breakdownHasArtNr: boolean
+  /** A label may carry a price and nothing else; then the price gets the room. */
+  readonly name: boolean
   readonly subtitle: boolean
   readonly artNr: boolean
   readonly priceSuffix: boolean
@@ -259,6 +261,7 @@ export function labelContent(label: Label, view: PriceView, brand: string | null
   return {
     breakdownRows: view.breakdown.length,
     breakdownHasArtNr: view.breakdown.some((row) => row.artNr !== null),
+    name: Boolean(label.name),
     subtitle: Boolean(label.subtitle),
     artNr: Boolean(label.artNr),
     priceSuffix: Boolean(view.suffix),
@@ -418,12 +421,22 @@ function textHeightsMm(content: LabelContent, style: LabelStyle): TextHeights {
 /** A text and the gap that separates it from the one above, or nothing when it is not printed. */
 const stacked = (printed: boolean, heightMm: number, gapMm: number): number => (printed ? gapMm + heightMm : 0)
 
+/**
+ * The head, as tall as the texts it actually prints.
+ *
+ * Summed rather than stacked one-by-one, because the gap belongs *between* the
+ * lines: a label with no name starts with its subtitle, and that subtitle must
+ * not inherit the gap that used to separate it from the name.
+ */
 export function headHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
   const heights = textHeightsMm(content, style)
-  const gap = headGapMm(style)
-  return (
-    nameHeightMm(style) + stacked(content.subtitle, heights.subtitle, gap) + stacked(content.artNr, heights.artNr, gap)
-  )
+  const printed = [
+    content.name ? nameHeightMm(style) : 0,
+    content.subtitle ? heights.subtitle : 0,
+    content.artNr ? heights.artNr : 0
+  ].filter((height) => height > 0)
+
+  return printed.reduce((sum, height) => sum + height, 0) + Math.max(0, printed.length - 1) * headGapMm(style)
 }
 
 export function footHeightMm(content: LabelContent, style: LabelStyle = DEFAULT_LABEL_STYLE): number {
@@ -521,7 +534,7 @@ export function labelBoxes(content: LabelContent, style: LabelStyle = DEFAULT_LA
   const priceHeight = priceBlockHeightMm(content, style)
 
   return {
-    name: box(width, nameHeightMm(style)),
+    name: box(width, content.name ? nameHeightMm(style) : 0),
     subtitle: box(width, heights.subtitle),
     artNr: box(width, heights.artNr),
     price: box(width, priceHeight - stacked(content.priceSuffix, heights.priceSuffix, priceGapMm(style))),
@@ -615,7 +628,7 @@ export function labelCssVars(content: LabelContent, style: LabelStyle = DEFAULT_
     '--label-price-trail': String(100 - pricePosPct(style)),
     '--label-head-h': mm(headHeightMm(content, style)),
     '--label-foot-h': mm(footHeightMm(content, style)),
-    '--label-name-h': mm(nameHeightMm(style)),
+    '--label-name-h': mm(content.name ? nameHeightMm(style) : 0),
     '--label-subtitle-h': mm(heights.subtitle),
     '--label-artnr-h': mm(heights.artNr),
     '--label-head-gap': mm(headGapMm(style)),

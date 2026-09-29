@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-col gap-3">
+  <div class="flex h-full min-h-0 flex-col gap-3">
     <div class="flex items-center gap-2">
       <Input v-model="query" placeholder="Teile durchsuchen" class="max-w-xs" />
       <span class="text-muted-foreground text-sm">{{ parts.length }} Teile</span>
@@ -61,7 +61,7 @@
             </div>
             <div class="flex flex-1 flex-col gap-1.5">
               <Label for="part-price">Preis</Label>
-              <MoneyInput v-model="priceCents" allow-empty placeholder="leer lassen für Freitext" />
+              <MoneyInput id="part-price" v-model="priceCents" allow-empty placeholder="leer lassen für Freitext" />
             </div>
           </div>
 
